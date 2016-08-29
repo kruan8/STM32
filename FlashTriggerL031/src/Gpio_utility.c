@@ -231,7 +231,7 @@ void Gpio_StandbyMode(void)
   PWR->CR |= PWR_CR_PDDS;  // Select STANDBY mode
   SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk; // Set SLEEPDEEP bit of Cortex-M0 System Control Register
 
-  __WFI();  // Request Wait For Interrupt
+  __wfi();  // Request Wait For Interrupt
 
   for(;;);
 }

@@ -11,6 +11,7 @@
 #include "timer.h"
 #include "spirit.h"
 #include "Gpio_utility.h"
+#include "Eeprom.h"
 
 #include <string.h>
 
@@ -76,6 +77,9 @@ PktBasicAddressesInit xAddressInit =
 
 #define STD_OFF_INTERVAL_MS         (1000*60*20)  // 20 minut
 #define PRG_OFF_INTERVAL_MS         (1000*60*1)   // 1 minuta
+
+#define EEPROM_STORAGE1       0
+#define EEPROM_STORAGE2       (EEPROM_STORAGE1 + sizeof(uint32_t))
 
 uint8_t aCheckBroadcast[] = {'C','H','E','C','K'};
 uint8_t aFlashBroadcast[] = {'F','L','A','S','H'};
@@ -271,6 +275,12 @@ void Programming()
   }
 
   // ulozit data
+  Eeprom_UnlockPELOCK();
+  Eeprom_WriteUint32(EEPROM_STORAGE1, g_nFlash1);
+  Eeprom_WriteUint32(EEPROM_STORAGE2, g_nFlash2);
+  Eeprom_LockNVM();
+
+
   // pokud g_nFlash2 == 0, neni interval (1 zablesk)
   // prehodit g_nFlash2 <-> g_nFlash1
 
@@ -463,6 +473,8 @@ void App_Init(void)
   Delay_ms(20);
 
   g_bFlashEnable = true;
+  g_nFlash1 = Eeprom_ReadUint32(EEPROM_STORAGE1);
+  g_nFlash2 = Eeprom_ReadUint32(EEPROM_STORAGE2);
 
   Spirit_EnableIRQ();
 }
@@ -579,3 +591,5 @@ void ADCGetConv(uint16_t ADCValue)
   }
 
 }
+
+

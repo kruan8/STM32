@@ -32,11 +32,16 @@
 //    return tmp;
 //}
 
-void Eeprom_WriteWord(uint32_t nAddr, uint32_t nValue)
+void Eeprom_WriteUint32(uint32_t nAddr, uint32_t nValue)
 {
   nAddr += DATA_E2_ADDR;
   *(uint32_t *)(nAddr) = nValue;
+}
 
+uint32_t Eeprom_ReadUint32(uint32_t nAddr)
+{
+  nAddr += DATA_E2_ADDR;
+  return *(uint32_t *)(nAddr);
 }
 
 /**
