@@ -80,7 +80,6 @@ static uint16_t g_nPwmRamp = 10;               // dynamicka rampa zmeny rychlost
 
 void Mot09_SoftPMDC_Init(void)
 {
-
   // GPIO configuration
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
@@ -127,6 +126,16 @@ void Mot09_SoftPMDC_Init(void)
     TIM_OC1Init(timDef[i], &TIM_OCInitStructure);
     TIM_OC2Init(timDef[i], &TIM_OCInitStructure);
 
+    TIM_BDTRInitTypeDef     TIM_BDTRInitStructure;
+    TIM_BDTRInitStructure.TIM_OSSRState = TIM_OSSRState_Enable;
+    TIM_BDTRInitStructure.TIM_OSSIState = TIM_OSSIState_Enable;
+    TIM_BDTRInitStructure.TIM_LOCKLevel = TIM_LOCKLevel_OFF;      // tady muzeme uzamknout nastaveni proti soft chybam
+    TIM_BDTRInitStructure.TIM_DeadTime = 10;
+    TIM_BDTRInitStructure.TIM_Break = TIM_Break_Disable;
+    TIM_BDTRInitStructure.TIM_BreakPolarity = TIM_BreakPolarity_High;
+    TIM_BDTRInitStructure.TIM_AutomaticOutput = TIM_AutomaticOutput_Disable;
+
+    TIM_BDTRConfig(timDef[i], &TIM_BDTRInitStructure);
     // TIM1/8 need extra command for BDTR register
     TIM_CtrlPWMOutputs(timDef[i], ENABLE);
 

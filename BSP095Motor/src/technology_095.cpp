@@ -30,17 +30,12 @@ tech_data Queue[DATA_QUEUE_SIZE];    // queue buffer
 u16 nQueueIn;           // pozice pro zapis
 u16 nQueueOut;          // pozice pro cteni
 
-// simulate data
-tech_data g_dataSimul;
-bool g_bSimulPosIncX = true;
-bool g_bSimulPosIncY = true;
-bool g_bSimulGyrIncX = true;
-bool g_bSimulGyrIncY = true;
-uint8_t g_bSimulCounter = 0;
-
 u16 nCopySamples = 0;
 tech_data g_data;           // vzorek dat stavu (pozice+acc) pro master
 
+uint32_t g_nCycles[MOTORS];  // pocet cyklu jednotlivych motoru
+uint16_t g_nSpeed[MOTORS];   //
+uint16_t g_nRamp[MOTORS];    //
 
 void Tech095_Init()
 {
@@ -57,7 +52,7 @@ void Tech095_Init()
 
 //	Pos095_Init();
 
-//	SwtInsertService(Tech095_Timer_10ms, 10, true);
+	SwtInsertService(Tech095_Timer_2ms, 2, true);
 
 }
 
@@ -83,79 +78,46 @@ void Tech095_Exec()
     }
 
   }
-
-//	Tenzo095_Exec();
-
-//	LSM303D_Exec();
-
-
-//	Pos095_Exec();
-
-//	Delay_ms(1000);
-//	if (Mot095_IsBrakeOff())
-//	{
-//		Mot095_Cycling();
-
-//		Mot095_MoveMotor(motor_1, 6666, dir_down);
-//		Delay_ms(1000);
-//		Mot095_MoveMotor(motor_1, 6666, dir_up);
-//		Delay_ms(1000);
-
-		// jedna otacka = 20000 impulzu
-//		Mot095_MoveMotorPulse(motor_1, 640000, 666000);
-//		while (Mot095_IsMotorMoving(motor_1));
-
-
-//		Mot095_MoveMotor(motor_1, 666666, dir_down);
-//		Delay_ms(5000);
-//		Mot095_MoveMotor(motor_1, 300066, dir_up);
-//		Delay_ms(5000);
-
-//		for (uint8_t i = 0; i < 10; i++)
-//		{
-//			Mot095_MoveMotorPulse(motor_1, 8800, 30600);
-//			while (Mot095_IsMotorMoving(motor_1));
-//			Mot095_MoveMotorPulse(motor_1, -8800, 30000);
-//			while (Mot095_IsMotorMoving(motor_1));
-//		}
-//
-//		for (uint8_t i = 0; i < 10; i++)
-//		{
-//			Mot095_MoveMotorPulse(motor_1, 8800, 306000);
-//			while (Mot095_IsMotorMoving(motor_1));
-//			Mot095_MoveMotorPulse(motor_1, -8800, 300000);
-//			while (Mot095_IsMotorMoving(motor_1));
-//		}
-//	}
-
 }
 
-void Tech095_Timer_10ms()
+void Tech095_Timer_2ms()
 {
-//	// zjisteni pozice teziste na plosine z tenzometru
-//  g_data.weight = Tenzo095_GetCentrePosition(&g_data.posX, &g_data.posY);
-//
-//  int32_t nPosX = Pos095_GetAngle(angleM1);
-//  int32_t nPosY = Pos095_GetAngle(angleM2);
-//
-//#if SEMIHOSTING
-//	printf("Angle: x=%d;y=%d\n", g_data.angleX, g_data.angleY);
-//#endif
-//
-//	// natoceni o 45 st. z pozic M1 a M2 do pozic X a Y
-//  int16_t nSinCos45 = 707;  // sin 45st. = 0.707, cos 45st. = 0.707
-//
-//  //  x = x * cos A - y * sin A;
-//  //  y = x * sin A + y * cos A;
-//  g_data.angleX = (int16_t)((nPosX * nSinCos45 - nPosY * nSinCos45) / 1000);
-//  g_data.angleY = (int16_t)((nPosY * nSinCos45 + nPosX * nSinCos45) / 1000);
-//
-//	Tech095_QueuePut(&g_data);
+	Tech095_QueuePut(&g_data);
 }
 
 tech_data* Tech095_GetData()
 {
  return &g_data;
+}
+
+void Tech095_SetParams(uint8_t motor, uint32_t nCycles, uint16_t nSpeed, uint16_t nRamp)
+{
+  if (motor < MOTORS)
+  {
+    g_nCycles[motor] = nCycles;
+    g_nSpeed[motor] = nSpeed;
+    g_nRamp[motor] = nRamp;
+  }
+}
+
+uint32_t Tech095_GetCycles(uint8_t motor)
+{
+  if (motor < MOTORS)
+  {
+    return g_nCycles[motor];
+  }
+
+  return 0;
+}
+
+void Tech095_Start(uint8_t motor)
+{
+
+}
+
+void Tech095_Stop(uint8_t motor)
+{
+
 }
 
 // -------------------------------------------------------------------------

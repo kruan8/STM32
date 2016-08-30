@@ -45,11 +45,11 @@ void USART_SetDIR(uint8_t active);
 void BTL_USART_Send(const uint8_t *Buffer, uint32_t Count);
 void BTL_USART_SendByte(uint16_t txByte);
 
-static void BTL_USART_GpioConfig(uint8_t nPort);
-static void BTL_USART_Config(uint8_t nPort);
-static void BTL_USART_NvicConfig(uint8_t nPort);
+//static void BTL_USART_GpioConfig(uint8_t nPort);
+//static void BTL_USART_Config(uint8_t nPort);
+//static void BTL_USART_NvicConfig(uint8_t nPort);
 //static void BTL_USART_GpioClock(GPIO_TypeDef* gpio, FunctionalState state);
-static void BTL_USART_Clock(USART_TypeDef* usart, FunctionalState state);
+//static void BTL_USART_Clock(USART_TypeDef* usart, FunctionalState state);
 
 void USART_IRQHandler(uint8_t nPort);
 void USART1_IRQHandler(void);

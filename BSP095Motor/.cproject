@@ -31,10 +31,10 @@
 								<option id="fr.ac6.managedbuild.gnu.c.compiler.option.optimization.level.305549850" name="Optimization Level" superClass="fr.ac6.managedbuild.gnu.c.compiler.option.optimization.level" useByScannerDiscovery="false"/>
 								<option id="gnu.c.compiler.option.debugging.level.803500113" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.2042803694" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="C:/Users/priesolv/workspace/BSP095Motor/inc"/>
-									<listOptionValue builtIn="false" value="C:/Users/priesolv/workspace/BSP095Motor/CMSIS/core"/>
-									<listOptionValue builtIn="false" value="C:/Users/priesolv/workspace/BSP095Motor/CMSIS/device"/>
-									<listOptionValue builtIn="false" value="C:/Users/priesolv/workspace/BSP095Motor/StdPeriph_Driver/inc"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/BSP095Motor/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/BSP095Motor/CMSIS/core}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/BSP095Motor/CMSIS/device}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/BSP095Motor/StdPeriph_Driver/inc}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.2009552561" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="STM32F407VGTx"/>
@@ -53,10 +53,10 @@
 								<option id="fr.ac6.managedbuild.gnu.cpp.compiler.option.optimization.level.1403487370" name="Optimization Level" superClass="fr.ac6.managedbuild.gnu.cpp.compiler.option.optimization.level" useByScannerDiscovery="false"/>
 								<option id="gnu.cpp.compiler.option.debugging.level.1207603169" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1570321059" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="C:/Users/priesolv/workspace/BSP095Motor/inc"/>
-									<listOptionValue builtIn="false" value="C:/Users/priesolv/workspace/BSP095Motor/CMSIS/core"/>
-									<listOptionValue builtIn="false" value="C:/Users/priesolv/workspace/BSP095Motor/CMSIS/device"/>
-									<listOptionValue builtIn="false" value="C:/Users/priesolv/workspace/BSP095Motor/StdPeriph_Driver/inc"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/BSP095Motor/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/BSP095Motor/CMSIS/core}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/BSP095Motor/CMSIS/device}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/BSP095Motor/StdPeriph_Driver/inc}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.2095605455" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="STM32F407VGTx"/>
@@ -81,10 +81,10 @@
 							<tool id="fr.ac6.managedbuild.tool.gnu.archiver.1110322981" name="MCU GCC Archiver" superClass="fr.ac6.managedbuild.tool.gnu.archiver"/>
 							<tool id="fr.ac6.managedbuild.tool.gnu.cross.assembler.852891758" name="MCU GCC Assembler" superClass="fr.ac6.managedbuild.tool.gnu.cross.assembler">
 								<option id="gnu.both.asm.option.include.paths.1224789448" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="C:/Users/priesolv/workspace/BSP095Motor/inc"/>
-									<listOptionValue builtIn="false" value="C:/Users/priesolv/workspace/BSP095Motor/CMSIS/core"/>
-									<listOptionValue builtIn="false" value="C:/Users/priesolv/workspace/BSP095Motor/CMSIS/device"/>
-									<listOptionValue builtIn="false" value="C:/Users/priesolv/workspace/BSP095Motor/StdPeriph_Driver/inc"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/BSP095Motor/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/BSP095Motor/CMSIS/core}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/BSP095Motor/CMSIS/device}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/BSP095Motor/StdPeriph_Driver/inc}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.45373989" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.assembler.input.1930182619" superClass="fr.ac6.managedbuild.tool.gnu.cross.assembler.input"/>

@@ -121,12 +121,13 @@ void Adc095_Init(void)
   ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
   ADC_InitStructure.ADC_Resolution = ADC_Resolution_12b;
   ADC_InitStructure.ADC_ContinuousConvMode = DISABLE;		// no continuous mode
-  ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T4_CC4;	// trigger TIM4_CH4
+  ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T1_CC1;	// trigger TIM1_CH1
   ADC_InitStructure.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_Rising;	// start conversion by rising edge
   ADC_InitStructure.ADC_NbrOfConversion = adc1_max;	//I think this one is clear
   ADC_InitStructure.ADC_ScanConvMode = ENABLE;
   ADC_Init(ADC1, &ADC_InitStructure);
 
+  ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T8_CC1; // trigger TIM8_CH1
   ADC_InitStructure.ADC_NbrOfConversion = adc2_max;
   ADC_Init(ADC2, &ADC_InitStructure);
 
@@ -136,18 +137,18 @@ void Adc095_Init(void)
 
   // skenovaci sekvence pro ADC1
   ADC_RegularChannelConfig(ADC1, ADC_Channel_5, 1, ADC_SampleTime_15Cycles); // current M1
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_8, 3, ADC_SampleTime_15Cycles); // ref current M1
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_2, 5, ADC_SampleTime_15Cycles); // angle M1
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_10, 7, ADC_SampleTime_3Cycles); // Udc voltage
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_16, 8, ADC_SampleTime_15Cycles); // MCU internal temperature sensor
+  ADC_RegularChannelConfig(ADC1, ADC_Channel_8, 2, ADC_SampleTime_15Cycles); // ref current M1
+  ADC_RegularChannelConfig(ADC1, ADC_Channel_2, 3, ADC_SampleTime_15Cycles); // angle M1
+  ADC_RegularChannelConfig(ADC1, ADC_Channel_10, 4, ADC_SampleTime_3Cycles); // Udc voltage
+  ADC_RegularChannelConfig(ADC1, ADC_Channel_16, 5, ADC_SampleTime_15Cycles); // MCU internal temperature sensor
 
   // enable internal temperature sensor
   ADC_TempSensorVrefintCmd(ENABLE);
 
   // skenovaci sekvence pro ADC2
   ADC_RegularChannelConfig(ADC2, ADC_Channel_7, 1, ADC_SampleTime_15Cycles); // current M2
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_9, 2, ADC_SampleTime_15Cycles); // ref current M2
-  ADC_RegularChannelConfig(ADC1, ADC_Channel_3, 3, ADC_SampleTime_15Cycles); // angle M2
+  ADC_RegularChannelConfig(ADC2, ADC_Channel_9, 2, ADC_SampleTime_15Cycles); // ref current M2
+  ADC_RegularChannelConfig(ADC2, ADC_Channel_3, 3, ADC_SampleTime_15Cycles); // angle M2
 
   // skenovaci sekvence pro ADC3
   ADC_RegularChannelConfig(ADC3, ADC_Channel_11, 1, ADC_SampleTime_15Cycles); // pfc_fan

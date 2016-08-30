@@ -149,17 +149,14 @@ void B095_OnRxDataPacket(uint8_t* pData, uint32_t dwLength)
 		case PID_INTERRUPT_CURRENT_TEST:   		B095_OnRx_InterruptCurrentTest();		  break;
 
     /*Slave Specific packets*/
-    case PID_GET_DATA:						        B095_OnRx_GetData();				          break;	// on request Get data
-//    case PID_TENZ_CALIB:					        B095_OnRx_TenzCalib();				        break;	// on request Tenzometr calibration
-    case PID_GET_HW:						          B095_OnRx_GetHW();						        break;	// on request Get HW
-//    case PID_GET_TENZ_INFO:					      B095_OnRx_GetTenzInfo();				      break;	// on request Get tenzometers info
-    case PID_SET_MOTORS:					        B095_OnRx_SetMotors();					      break;	// on request Set motors
-//    case PID_CONFIGURATION:					      B095_OnRx_Configuration();				    break;	// on request Configuration
-    case PID_DRIVE_ON:                    B095_OnRx_DriveOn();                  break;  // on request Driver ON
-//    case PID_SET_MODE:                    B095_OnRx_SetMode();                  break;  // on request SetMode
+    case PID_MOTOR_START:						      B095_OnRx_MotorStart();			          break;	//
+    case PID_MOTOR_STOP:					        B095_OnRx_MotorStop();				        break;	//
+    case PID_GET_INFO:						        B095_OnRx_GetInfo();					        break;	//
+    case PID_SENSOR_CALIBRATE:					  B095_OnRx_SensorCalibrate();		      break;	//
+    case PID_GET_DATA:					          B095_OnRx_GetData();  					      break;	//
+//    case PID_DRIVE_ON:                    B095_OnRx_DriveOn();                  break;  // on request Driver ON
 
-    // service packets
-//    case PID_SAMPLE_TABLE:                B095_OnRx_SampleTable();              break;
+
 
 		default: 						              		B095_OnUnsupportedID();					      break;
 	}
@@ -629,415 +626,138 @@ void B095_ClrCommWd(void)
 	CommTimeoutCnt = CommTimeout;           //CommTimeoutCnt is like counter register which will be decrementing, CommTimeout is reload value which is set by master 
 }
 
-/*******************************************************************************
-* Function Name  : B095_OnRx_GetData
-* Description    : Send samples from buffer
-* Input          : None
-* Return         : None
-*******************************************************************************/
-void B095_OnRx_GetData(void)
+
+// ----------- pakety pro pripravek ---------------------------
+
+void B095_OnRx_MotorStart(void)
 {
-	const uint8_t nMaxSamples = 20;  // maximalni pocet vzorku v paketu (TX buffer size = 1024)
-	tech_data* pSample;
-	static uint8_t nPacketID;
+  uint8_t nMotor = RxData[1] & 0b1;
+  uint32_t nCycles = V200_ConvertArrayToU32(&RxData[2]);
+  uint16_t nSpeed = (RxData[6] << 8) | RxData[7];
+  uint16_t nRamp = (RxData[8] << 8) | RxData[9];
 
-	// citac ID paketu (4 bity - cita dokola), pokud dorazi stejne ID, nemazat frontu, pokud jine, smazat vzorky
-	uint8_t nIdAndReset = RxData[1];
+  TxData[0] = PID_MOTOR_START;
+  TxData[1] = 1;
+  if (nMotor < MOTORS)
+  {
+    TxData[1] = 0;
+    Tech095_SetParams(nMotor, nCycles, nSpeed, nRamp);
+    Tech095_Start(nMotor);
 
-	// predchozi paket se vzorky byl dorucen, uvolnime vzorky z bufferu
-	if ((nIdAndReset & 0x7F) != nPacketID)
-	{
-		while (Tech095_QueueGetCopyCount())
-		{
-		  Tech095_QueueGet();
-		}
-	}
+  }
 
-	// nejvysi bit je RESET flag pro smazani fronty a vraceni nejmladsiho elementu
-	if (nIdAndReset & 0x80)
-	{
-	  pSample = Tech095_QueueReset();
-	  if (pSample)    // pokud byl element, vratit ho do smazane fronty, ten bude potom odeslan
-	  {
-	    Tech095_QueuePut(pSample);
-	  }
-	}
-
-	nPacketID = nIdAndReset & 0x7F;   // ulozit ID paketu bez reset flagu
-	TxData[0] = PID_REPLY_GET_DATA;
-
-	u16 pos = 3;
-
-	// nacpat vzorky do paketu
-	uint16_t nLastPacketSampleCount = 0;  // citac vzorku
-	while (nLastPacketSampleCount < nMaxSamples)
-	{
-		pSample = Tech095_QueueCopy(nLastPacketSampleCount);
-		if (!pSample)
-		{
-			break;		// neni pSample v bufferu
-		}
-
-		nLastPacketSampleCount++;
-		TxData[pos++] = (u8)(pSample->posX >> 8); 	// pos X high
-		TxData[pos++] = (u8)(pSample->posX); 	// pos X low
-
-		TxData[pos++] = (u8)(pSample->posY >> 8); 	// pos Y high
-		TxData[pos++] = (u8)(pSample->posY); 	// pos Y low
-
-		// 4x tenzometry madel
-		TxData[pos++] = 0;
-		TxData[pos++] = 0;
-		TxData[pos++] = 0;
-		TxData[pos++] = 0;
-
-		TxData[pos++] = (u8)(pSample->weight >> 8);
-		TxData[pos++] = (u8)(pSample->weight);
-
-		TxData[pos++] = (u8)(pSample->angleX >> 8); 	// angleX high
-		TxData[pos++] = (u8)pSample->angleX; 		// angleX low
-
-		TxData[pos++] = (u8)(pSample->angleY >> 8); 	// Y high
-		TxData[pos++] = (u8)pSample->angleY; 		// Y low
-	}
-
-	TxData[1] = (u8) (nLastPacketSampleCount >> 8);
-	TxData[2] =	(u8) (nLastPacketSampleCount);
-
-	B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, pos);
+  B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, 2);
 }
 
-//void B095_OnRx_TenzCalib(void)
-//{
-//	TxData[0] = PID_REPLY_TENZ_CALIB;
-//	calib_mode_e eMode = (calib_mode_e)RxData[1];
-//	u8 nIndex = RxData[2];
-//	u16 nConst = (RxData[3] << 8) | RxData[4];
-//
-//	u8 nResult = 1;
-//
-//	if (eMode == calib_tenz_w)  // 0=weight calibration
-//	{
-//	  Tenzo095_WeightCalibration(nIndex, nConst);
-//	}
-//	else if (eMode == calib_tenz_zero)  // 1=zero calibration (pro vsechny tenzometry najednou)
-//	{
-//		for (u8 i = 0; i < ALL_TENZOMETERS; i++)
-//		{
-//			Tenzo095_ZeroCalibration(i);
-//			if (!Conf095_Save())
-//			{
-//			  nResult = 0;  // chyba zapisu do eeprom
-//			}
-//		}
-//	}
-//	else if (eMode == calib_acc_zero)
-//	{
-//	  if (!LSM303D_ZeroCalibrate())
-//	  {
-//	    nResult = 0;    // chyba zapisu do eeprom
-//	  }
-//	}
-//	else if (eMode == calib_angle_X)
-//	{
-//	  Pos095_CalibAngle(angleM1, nConst, (bool)nIndex);
-//	}
-//	else if (eMode == calib_angle_Y)
-//  {
-//    Pos095_CalibAngle(angleM2, nConst, (bool)nIndex);
-//  }
-//
-//	TxData[0] = PID_REPLY_TENZ_CALIB;
-//	TxData[1] = nResult;
-//
-//	B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, 2);
-//}
 
-void B095_OnRx_GetHW(void)
+void B095_OnRx_MotorStop(void)
 {
-	TxData[0] = PID_REPLY_GET_HW;
+  uint8_t nMotor = RxData[1] & 0b1;
 
-	u16 nPos = 1;
-	u16 value;
+  TxData[0] = PID_MOTOR_STOP;
+  TxData[1] = 1;
+  if (nMotor < MOTORS)
+  {
+    TxData[1] = 0;
+    Tech095_Stop(nMotor);
+  }
 
-	// teplota generu
-	value = Adc095_GetTempMCU_C();
-	TxData[nPos++] = (u8)(value >> 8);
-	TxData[nPos++] = (u8)(value);
+  B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, 2);
 
-	// teplota motoru 1
-	value = 0;
-	TxData[nPos++] = (u8)(value >> 8);
-	TxData[nPos++] = (u8)(value);
-
-	// teplota motoru 2
-	value = Adc095_GetTempM2_C();
-	TxData[nPos++] = (u8)(value >> 8);
-	TxData[nPos++] = (u8)(value);
-
-	// napajeni 24 V
-	value = Adc095_GetAdaptor_mV();
-	TxData[nPos++] = (u8)(value >> 8);
-	TxData[nPos++] = (u8)(value);
-
-	// AC line
-	value = Adc095_GetAcLineIn_mV() / 100;   // rozliseni 0.1 V
-	TxData[nPos++] = (u8)(value >> 8);
-	TxData[nPos++] = (u8)(value);
-
-	// AC line contactor
-	value = Adc095_GetAcLineOut_mV() / 100;    // rozliseni 0.1 V
-	TxData[nPos++] = (u8)(value >> 8);
-	TxData[nPos++] = (u8)(value);
-
-	B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, nPos);
 }
 
-//void B095_OnRx_GetTenzInfo(void)
-//{
-//	TxData[0] = PID_REPLY_GET_TENZ_INFO;
-//
-//	u16 nPos = 1;
-//
-//	for (u8 i = 0; i < ALL_TENZOMETERS; i++)
-//	{
-//		// RAW hodnota prevodniku
-//		V200_ConvertU32ToArray(Tenzo095_GetRawValue(i), &TxData[nPos]);
-//		nPos += 4;
-//
-//		// prepocitana hodnota tenzometru
-//		V200_ConvertS32ToArray(Tenzo095_GetValue(i), &TxData[nPos]);
-//		nPos += 4;
-//
-//		// hmotnost na tenzometru
-//		u16 value = Tenzo095_GetWeight_g(i) / 100;  // prevod z gramu do 0,1 kg
-//		TxData[nPos++] = (u8)(value >> 8);
-//		TxData[nPos++] = (u8)(value);
-//	}
-//
-//	uint16_t nVoltage_mV = (int16_t) Pos095_GetAngleVoltage_mV(angleM1);
-//	int16_t nAngle = Pos095_GetAngle(angleM1);
-//
-//  TxData[nPos++] = (u8)(nVoltage_mV >> 8);
-//  TxData[nPos++] = (u8)(nVoltage_mV);
-//
-//  TxData[nPos++] = (u8)(0);
-//  TxData[nPos++] = (u8)(0);
-//
-//  TxData[nPos++] = (u8)(nAngle >> 8);
-//  TxData[nPos++] = (u8)(nAngle);
-//
-//  nVoltage_mV = (int16_t) Pos095_GetAngleVoltage_mV(angleM2);
-//  nAngle = Pos095_GetAngle(angleM2);
-//
-//  TxData[nPos++] = (u8)(nVoltage_mV >> 8);
-//  TxData[nPos++] = (u8)(nVoltage_mV);
-//
-//  TxData[nPos++] = (u8)(0);
-//  TxData[nPos++] = (u8)(0);
-//
-//  TxData[nPos++] = (u8)(nAngle >> 8);
-//  TxData[nPos++] = (u8)(nAngle);
-//
-//	B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, nPos);
-//}
-
-//void B095_OnRx_SetMode(void)
-//{
-//  uint8_t nMode = RxData[1];
-//  uint16_t nParam = (RxData[2] << 8) | RxData[3];
-//
-//  Pos095_SetMode((pos_mode_e)nMode, nParam);
-//
-//  TxData[0] = PID_REPLY_SET_MODE;
-//  TxData[1] = 0;
-//  B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, 2);
-//}
-
-void B095_OnRx_SetMotors(void)
+void B095_OnRx_GetInfo(void)
 {
-//	bool bM1_On = RxData[1] & 0b1;
-//	bool bM2_On = RxData[2] & 0b1;
-//	mot_direction_e dir_mot1 = (RxData[1] & 0b10) ? dir_up : dir_down;
-//	mot_direction_e dir_mot2 = (RxData[2] & 0b10) ? dir_up : dir_down;
-//	s32 nFreqM1 = V200_ConvertArrayToU32(&RxData[3]);
-//	s32 nFreqM2 = V200_ConvertArrayToU32(&RxData[7]);
-//
-//	// priprava odpovedi
-//	TxData[0] = PID_REPLY_SET_MOTORS;
-//  TxData[1] = 0;
-//  TxData[2] = RxData[1];
-//  TxData[3] = RxData[2];
-//
-//	// kontrola, jestli je drive motoru ON
-//	mot_driveState_e eDrvState = Mot095_GetDriveState();
-//	if (eDrvState != mot_ready)
-//	{
-//	  TxData[1] = (uint8_t) eDrvState;
-//    TxData[2] = 0;
-//    TxData[3] = 0;
-//    B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, 4);
-//    return;
-//	}
-//
-//	// set M1
-//	if (!bM1_On)
-//	{
-//	  nFreqM1 = 0;
-//	}
-//
-//  if (dir_mot1 == dir_up)
-//  {
-//    nFreqM1 *= -1;
-//  }
-//
-//	Mot095_MoveMotor(motor_1, nFreqM1);
-//
-//	// set M2
-//	if (!bM2_On)
-//	{
-//	  nFreqM2 = 0;
-//	}
-//
-//  if (dir_mot2 == dir_up)
-//  {
-//    nFreqM2 *= -1;
-//  }
-//
-//	Mot095_MoveMotor(motor_2, nFreqM2);
-//
-//	Mot095_LogEnable(true);
-//	if (!nFreqM2 && !nFreqM2)
-//	{
-//	  Mot095_LogEnable(false);
-//	}
+  TxData[0] = PID_GET_INFO;
+  TxData[1] = RxData[1];
 
-	TxData[0] = PID_REPLY_SET_MOTORS;
-	TxData[1] = 0;
-	TxData[2] = RxData[1];
-	TxData[3] = RxData[2];
+  uint16_t nPos = 2;
+  V200_ConvertU32ToArray(123, &TxData[nPos]); // pocet cyklu
+  nPos += 4;
 
-	B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, 4);
+  int16_t nTemp = 0 + 273; // teplota bude v kelvinech
+  TxData[nPos++] = (u8)(nTemp >> 8);
+  TxData[nPos++] = (u8)(nTemp);
+
+  int16_t nPfcVoltage = 800; // teplota bude v kelvinech
+  TxData[nPos++] = (u8)(nPfcVoltage >> 8);
+  TxData[nPos++] = (u8)(nPfcVoltage);
+
+  B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, nPos);
 }
 
-//void B095_OnRx_Configuration(void)
-//{
-//	uint16_t nPos = 0;
-//	TxData[0] = PID_REPLY_CONFIGURATION;
-//	TxData[1] = RxData[1];		// vrati mod paketu
-//	TxData[2] = 0;
-//	if (RxData[1] == 1)		// master data zapisuje
-//	{
-//		if(RxDataLength < 4)
-//		{
-//			B095_Service_SendPacketDataResponse(SR_ERR_SYNTAX_ERROR, NULL, 0);
-//			return;
-//		}
-//
-//		uint16_t nPos = 2;
-//		Mot095_SetConfig((RxData[nPos] << 8) | RxData[nPos + 1], true);
-//		nPos += 2;
-//
-//		if (RxDataLength >= 6)
-//		{
-//		  Tenz095_SetMinValueCOP((RxData[nPos] << 8) | RxData[nPos + 1]);
-//		  nPos += 2;
-//		}
-//
-//		if (RxDataLength >= 18)
-//		{
-//		  int32_t nP = V200_ConvertArrayToU32(&RxData[nPos]);
-//		  nPos += 4;
-//		  int32_t nI = V200_ConvertArrayToU32(&RxData[nPos]);
-//      nPos += 4;
-//      int32_t nD = V200_ConvertArrayToU32(&RxData[nPos]);
-//      nPos += 4;
-//
-//      if (Pos095_SetPID(nP, nI, nD))
-//      {
-//        TxData[2] = 1;
-//      }
-//		}
-//
-//		B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, 3);
-//	}
-//	else if (RxData[1] == 0) // master chce data cist
-//	{
-//		nPos = 2;
-//
-//		// maximalni zmena rampy proudu
-//		TxData[nPos++] = (uint8_t) (Conf095_GetConf()->nMotorRamp >> 8);
-//		TxData[nPos++] = (uint8_t) (Conf095_GetConf()->nMotorRamp);
-//
-//		// min value COP
-//		TxData[nPos++] = (uint8_t) (Tenz095_GetMinValueCOP() >> 8);
-//		TxData[nPos++] = (uint8_t) (Tenz095_GetMinValueCOP());
-//
-//		// PID konstanty
-//		int32_t nP, nI, nD;
-//		Pos095_GetPID(&nP, &nI, &nD);
-//
-//		V200_ConvertS32ToArray(nP, &TxData[nPos]);
-//		nPos += 4;
-//		V200_ConvertS32ToArray(nI, &TxData[nPos]);
-//    nPos += 4;
-//    V200_ConvertS32ToArray(nD, &TxData[nPos]);
-//    nPos += 4;
-//
-//		B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, nPos);
-//	}
-//	else if (RxData[1] == 2)  // master vynuti generu nastaveni default hodnot
-//	{
-//		Mot095_SetConfigDefault();
-//		Tenz095_SetDefault();
-//		TxData[2] = 0;
-//		B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, 3);
-//	}
-//}
-
-void B095_OnRx_DriveOn(void)
+void B095_OnRx_SensorCalibrate(void)
 {
-//  if (RxData[1] == 1)   // zapnout drive motoru
-//  {
-//    Mot095_DriverOn();
-//  }
-//  else
-//  {
-//    Mot095_DriverOff();
-//  }
-
-  TxData[0] = PID_REPLY_DRIVE_ON;
+  TxData[0] = PID_SENSOR_CALIBRATE;
   TxData[1] = 0;
   B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, 2);
 }
 
-//void B095_OnRx_SampleTable(void)
-//{
-//  uint16_t nIndex = (RxData[1] << 8) | RxData[2];
-//  uint16_t nCount = (RxData[3] << 8) | RxData[4];
-//
-//  TxData[0] = PID_REPLY_SAMPLE_TABLE;
-//  TxData[1] = 0;
-//
-//  CActiveSampleStorage* storage = Pos095_GetSampleStorage();
-//  if (nIndex == 0)
-//  {
-//    storage->Clear();
-//  }
-//
-//  uint16_t nPos = 5;  // index of the table start
-//  while (nCount--)
-//  {
-//    if (!storage->AddSample(&RxData[nPos]))
-//    {
-//      TxData[1] = 1;
-//      break;
-//    }
-//
-//    nPos += 5;
-//  }
-//
-//  B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, 2);
-//}
+void B095_OnRx_GetData(void)
+{
+  const uint8_t nMaxSamples = 20;  // maximalni pocet vzorku v paketu (TX buffer size = 1024)
+  tech_data* pSample;
+  static uint8_t nPacketID;
+
+  // citac ID paketu (4 bity - cita dokola), pokud dorazi stejne ID, nemazat frontu, pokud jine, smazat vzorky
+  uint8_t nIdAndReset = RxData[1];
+
+  // predchozi paket se vzorky byl dorucen, uvolnime vzorky z bufferu
+  if ((nIdAndReset & 0x7F) != nPacketID)
+  {
+    while (Tech095_QueueGetCopyCount())
+    {
+      Tech095_QueueGet();
+    }
+  }
+
+  // nejvysi bit je RESET flag pro smazani fronty a vraceni nejmladsiho elementu
+  if (nIdAndReset & 0x80)
+  {
+    pSample = Tech095_QueueReset();
+    if (pSample)    // pokud byl element, vratit ho do smazane fronty, ten bude potom odeslan
+    {
+      Tech095_QueuePut(pSample);
+    }
+  }
+
+  nPacketID = nIdAndReset & 0x7F;   // ulozit ID paketu bez reset flagu
+  TxData[0] = PID_REPLY_GET_DATA;
+
+  u16 pos = 3;
+
+  // nacpat vzorky do paketu
+  uint16_t nLastPacketSampleCount = 0;  // citac vzorku
+  while (nLastPacketSampleCount < nMaxSamples)
+  {
+    pSample = Tech095_QueueCopy(nLastPacketSampleCount);
+    if (!pSample)
+    {
+      break;    // neni pSample v bufferu
+    }
+
+    nLastPacketSampleCount++;
+    uint16_t nValue = 0x8000 + pSample->nVoltageM1; // offset kvuli znamenku
+    TxData[pos++] = (u8)(nValue >> 8);   // pos X high
+    TxData[pos++] = (u8)(nValue);  // pos X low
+
+    nValue = 0x8000 + pSample->nCurrentM1;
+    TxData[pos++] = (u8)(nValue >> 8);   // pos Y high
+    TxData[pos++] = (u8)(nValue);  // pos Y low
+
+    nValue = 0x8000 + pSample->nVoltageM2;
+    TxData[pos++] = (u8)(nValue >> 8);   // pos X high
+    TxData[pos++] = (u8)(nValue);  // pos X low
+
+    nValue = 0x8000 + pSample->nCurrentM2;
+    TxData[pos++] = (u8)(nValue >> 8);   // pos Y high
+    TxData[pos++] = (u8)(nValue);  // pos Y low
+  }
+
+  TxData[1] = (u8) (nLastPacketSampleCount >> 8);
+  TxData[2] = (u8) (nLastPacketSampleCount);
+
+  B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, pos);
+}
 
 /*End of File**********************************************************/

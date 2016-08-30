@@ -61,20 +61,12 @@ typedef enum packet_id
   PID_REPLY_SEND_LOGGING_ERROR 		     = 0xE0,
 
   // Recommended packets
-  PID_GET_DATA			                  = 0x20,
-  PID_TENZ_CALIB		                  = 0x21,
-  PID_GET_HW			                    = 0x22,
-  PID_GET_TENZ_INFO		                = 0x23,
-  PID_SET_MOTORS		                  = 0x24,
-  PID_CONFIGURATION		                = 0x25,
-  PID_DRIVE_ON                        = 0x26,
-  PID_SET_MODE                        = 0x27,
+  PID_MOTOR_START		                  = 0x20,
+  PID_MOTOR_STOP		                  = 0x21,
+  PID_GET_INFO		                    = 0x22,
+  PID_SENSOR_CALIBRATE                = 0x23,
+  PID_GET_DATA  		                  = 0x24,
   PID_SEND_ERROR_CODE                 = 0x28,
-
-  // Service packets
-  PID_SAMPLE_TABLE                    = 0x61,
-
-  PID_REPLY_SAMPLE_TABLE              = 0x71,
 
   PID_START_TEST_PROCESS			        = 0x6D,
   PID_SEND_LAST_TEST_STATUS			      = 0x6E,
@@ -134,14 +126,11 @@ void B095_SetEnCommWd(bool WdEnable);
 void B095_ClrCommWd(void);
 void B095_SendTemp(void);
 
+void B095_OnRx_MotorStart(void);
+void B095_OnRx_MotorStop(void);
+void B095_OnRx_GetInfo(void);
+void B095_OnRx_SensorCalibrate(void);
 void B095_OnRx_GetData(void);
-void B095_OnRx_TenzCalib(void);
-void B095_OnRx_GetHW(void);
-void B095_OnRx_GetTenzInfo(void);
-void B095_OnRx_SetMotors(void);
-void B095_OnRx_Configuration(void);
-void B095_OnRx_DriveOn(void);
-void B095_OnRx_SetMode(void);
 
 void B095_OnRx_ParamMotion(void);
 void B095_OnRx_SampleTable(void);

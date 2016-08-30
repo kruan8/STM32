@@ -823,7 +823,7 @@ void V200_ConvertS32ToArray(s32 value, u8 *array)
 	array[3] = (u8)(value);
 }
 
-uint32_t V200_ConvertArrayToU32( u8 *array)
+uint32_t V200_ConvertArrayToU32(u8 *array)
 {
 	uint32_t value = 0;
 	value = (uint32_t) array[0] << 24;
