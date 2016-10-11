@@ -7,6 +7,7 @@
 
 #include "Gpio_utility.h"
 #include "timer.h"
+#include "spirit.h"
 
 #define LED_PIN                         (1 << 4)  // out
 #define LED_GPIO_PORT                   GPIOA
@@ -223,15 +224,19 @@ void Gpio_Off(void)
 
 void Gpio_StandbyMode(void)
 {
+  Spirit_EnterShutdown();
+
   // to standby
   RCC->APB1ENR |= RCC_APB1ENR_PWREN; // RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
   PWR->CSR |= PWR_CSR_EWUP1;  // PWR_WakeUpPinCmd(PWR_WakeUpPin_1, ENABLE);
 
   PWR->CR |= PWR_CR_CWUF;  // Clear Wakeup flag
+  PWR->CR |= PWR_CR_CSBF;  // clear Standby flag
   PWR->CR |= PWR_CR_PDDS;  // Select STANDBY mode
   SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk; // Set SLEEPDEEP bit of Cortex-M0 System Control Register
 
-  __wfi();  // Request Wait For Interrupt
+//  __WFI;  // Request Wait For Interrupt
+  __ASM volatile ("wfi");
 
   for(;;);
 }
@@ -264,7 +269,8 @@ void Gpio_SysTickCallback()
     static uint8_t old_state = 0;
     static uint8_t key_cnt = 0;
 
-    uint8_t state = (!(BUTTON_GPIO_PORT->IDR & BUTTON_PIN));
+//    uint8_t state = (!(BUTTON_GPIO_PORT->IDR & BUTTON_PIN));
+    uint8_t state = (BUTTON_GPIO_PORT->IDR & BUTTON_PIN);
     if (state != old_state)
     {
       key_cnt = DBNC_CNT;

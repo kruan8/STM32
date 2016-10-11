@@ -9,8 +9,8 @@
 
 void SetHSI16(void)
 {
-  RCC->APB1ENR |= (RCC_APB1ENR_PWREN); /* (1) */
-  PWR->CR = (PWR->CR & ~(PWR_CR_VOS)) | PWR_CR_VOS_0; /* (2) */
+//  RCC->APB1ENR |= (RCC_APB1ENR_PWREN); /* (1) */
+//  PWR->CR = (PWR->CR & ~(PWR_CR_VOS)) | PWR_CR_VOS_0; /* (2) */
 
   RCC->CR |= RCC_CR_HSION;  // HSI osc ON
   while ((RCC->CR & (RCC_CR_HSIRDY)) != (RCC_CR_HSIRDY)); // wait for HSI ready

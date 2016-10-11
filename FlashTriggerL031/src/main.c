@@ -10,6 +10,7 @@
 #include "spirit_spi.h"
 #include "timer.h"
 #include "trigger_app.h"
+#include "Gpio_utility.h"
 
 #include "Eeprom.h"
 
@@ -31,25 +32,18 @@ int main(void)
 //  uint8_t v = (*(uint8_t *)(DATA_E2_ADDR+1));
 //  Eeprom_LockNVM();
 
+  App_Init();
+  Gpio_LedBlink(500);
 
-
-  // po resetu jdeme do Standby
+//  // po resetu jdeme do Standby
+//  RCC->APB1ENR |= RCC_APB1ENR_PWREN;
 //  if (!(PWR->CSR & PWR_CSR_SBF))
 //  {
-//    StandbyMode();
+//    Gpio_StandbyMode();
 //  }
 
-
-//  SPIspirit_init();
-//
-//  while(1)
-//  {
-//    SPIspirit_write(0xAA);
-//  }
-
-
-  App_Init();
-
+//  uint8_t res = SpiritRadioSetFrequencyBase(915000000);
+//  uint32_t freq = SpiritRadioGetFrequencyBase();
   while (1)
   {
     App_Exec();

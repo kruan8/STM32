@@ -8,14 +8,17 @@
 #include "spirit.h"
 #include "spirit_spi.h"
 
+//#define USE_SPIRIT1_868MHz
+#define USE_SPIRIT1_915MHz
+
 #define SPIRIT1_SDN_PIN                 (1 << 2)  // out
 #define SPIRIT1_SDN_GPIO_PORT           GPIOA
 
 #define SPIRIT1_GPIO3_PIN               (1 << 10) // in
 #define SPIRIT1_GPIO3_GPIO_PORT         GPIOA
 
-#define SPIRIT1_SDN_INACTIVE            (SPIRIT1_SDN_GPIO_PORT->BRR = SPIRIT1_SDN_PIN)
-#define SPIRIT1_SDN_ACTIVE              (SPIRIT1_SDN_GPIO_PORT->BSRR = SPIRIT1_SDN_PIN)
+#define SPIRIT1_SDN_INACTIVE            (SPIRIT1_SDN_GPIO_PORT->BSRR = SPIRIT1_SDN_PIN)
+#define SPIRIT1_SDN_ACTIVE              (SPIRIT1_SDN_GPIO_PORT->BRR = SPIRIT1_SDN_PIN)
 
 #define POR_TIME ((uint16_t)0x1E00)
 
@@ -47,13 +50,13 @@ void Spirit_Init(Ptr_OnGPIO3_EXTI pOnGPIO3Exti)
 // Puts at logic 1 the SDN pin.
 void Spirit_EnterShutdown(void)
 {
-  SPIRIT1_SDN_ACTIVE;
+  SPIRIT1_SDN_INACTIVE;
 }
 
 // Put at logic 0 the SDN pin.
 void Spirit_ExitShutdown(void)
 {
-  SPIRIT1_SDN_INACTIVE;
+  SPIRIT1_SDN_ACTIVE;
 
   /* Delay to allow the circuit POR, about 700 us */
   for (volatile uint32_t i = 0; i < POR_TIME; i++);
@@ -131,18 +134,36 @@ void Spirit_InitRegs()
   Spirit_WriteReg(154, 227);
   Spirit_WriteReg(158, 91);
 
+#ifdef USE_SPIRIT1_868MHz  // for 848 MHz
   Spirit_WriteReg(8, 6);
   Spirit_WriteReg(9, 130);
   Spirit_WriteReg(10,143);
   Spirit_WriteReg(11, 89);
+#endif
+
+#ifdef USE_SPIRIT1_915MHz  // for 915 MHz
+  Spirit_WriteReg(8, 134);
+  Spirit_WriteReg(9, 220);
+  Spirit_WriteReg(10, 204);
+  Spirit_WriteReg(11, 201);
+#endif
 
   Spirit_WriteReg(158, 219);
   Spirit_WriteReg(158, 219);
 
+#ifdef USE_SPIRIT1_868MHz  // for 848 MHz
   Spirit_WriteReg(8, 13);
   Spirit_WriteReg(9, 5);
   Spirit_WriteReg(10, 30);
   Spirit_WriteReg(11, 177);
+#endif
+
+#ifdef USE_SPIRIT1_915MHz  // for 915 MHz
+  Spirit_WriteReg(8, 141);
+  Spirit_WriteReg(9, 185);
+  Spirit_WriteReg(10, 153);
+  Spirit_WriteReg(11, 145);
+#endif
 
   Spirit_WriteReg(161, 25);
   Spirit_WriteReg(80, 2);
@@ -159,14 +180,31 @@ void Spirit_InitRegs()
   Spirit_WriteReg(158, 91);
   Spirit_WriteReg(158, 91);
 
+#ifdef USE_SPIRIT1_868MHz  // for 848 MHz
   Spirit_WriteReg(8, 6);
   Spirit_WriteReg(9, 130);
   Spirit_WriteReg(10, 143);
   Spirit_WriteReg(11, 89);
+#endif
+
+#ifdef USE_SPIRIT1_915MHz  // for 915 MHz
+  Spirit_WriteReg(8, 134);
+  Spirit_WriteReg(9, 220);
+  Spirit_WriteReg(10, 204);
+  Spirit_WriteReg(11, 201);
+#endif
 
   Spirit_WriteReg(161, 17);
+
+#ifdef USE_SPIRIT1_868MHz  // for 848 MHz
   Spirit_WriteReg(110, 67);  // nebo 66
   Spirit_WriteReg(111, 67);  // nebo 66
+#endif
+
+#ifdef USE_SPIRIT1_915MHz  // for 915 MHz
+  Spirit_WriteReg(110, 39);
+  Spirit_WriteReg(111, 39);
+#endif
 }
 
 void Spirit_SetPowerRegs(void)

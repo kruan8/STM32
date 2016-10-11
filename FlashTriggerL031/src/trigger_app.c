@@ -384,15 +384,15 @@ void AppliReceiveBuff(uint8_t *RxFrameBuff, uint8_t cRxlen)
 
 void App_Init(void)
 {
-  Gpio_Init();
-
   TimerInit();
+
+  Gpio_Init();
+  Spirit_Init(OnSpiritInterruptHandler);
 
   SetOffInterval(STD_OFF_INTERVAL_MS);
 
   g_Master = Gpio_IsMaster();
 
-  Spirit_Init(OnSpiritInterruptHandler);
   SPIspirit_init();
 
   /* Board management */
@@ -400,31 +400,17 @@ void App_Init(void)
   Spirit_ExitShutdown();
 
   uint8_t v;
-  StatusBytes sb = SpiritSpiReadRegisters(DEVICE_INFO1_PARTNUM, 1, &v);
+  StatusBytes sb;
+  sb = SpiritSpiReadRegisters(DEVICE_INFO1_PARTNUM, 1, &v);
   sb = SpiritSpiReadRegisters(DEVICE_INFO0_VERSION, 1, &v);
 
   SpiritManagementIdentificationRFBoard();
-
-  // Spirit IRQ config
-  Spirit1GpioIrqInit(&xGpioIRQ);
-
-  // Spirit Radio config
-  Spirit_InitRegs();
-//  SpiritRadioInit(&xRadioInit);
-
-  // Spirit Radio set power
-  Spirit_SetPowerRegs();
-//  Spirit1SetPower(POWER_INDEX, POWER_DBM);
-
-  // Spirit Packet config
-  Spirit_ProtocolInitRegs();
-//  BasicProtocolInit();
-
+  Spirit1GpioIrqInit(&xGpioIRQ); // Spirit IRQ config
+  Spirit_InitRegs();// Spirit Radio config
+  Spirit_SetPowerRegs();  // Spirit Radio set power
+  Spirit_ProtocolInitRegs();  // Spirit Packet config
   Spirit_EnableSQIRegs();
-//  Spirit1EnableSQI();
-
   Spirit_SetRssiTHRegs();
-//  Spirit1SetRssiTH(RSSI_THRESHOLD);
 
   // cekat na uvolneni tlacitka
   g_eState = APP_STATE_IDLE;

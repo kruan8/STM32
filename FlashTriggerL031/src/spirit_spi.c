@@ -51,12 +51,15 @@ void SPIspirit_init()
                   & ~(GPIO_MODER_MODE5 | \
                       GPIO_MODER_MODE6 | GPIO_MODER_MODE7))\
                   | (GPIO_MODER_MODE5_1 | \
-                     GPIO_MODER_MODE6_1 | GPIO_MODER_MODE7_1); /* (1) */
-  GPIOA->AFR[0] = (GPIOA->AFR[0] & ~((0xF<<(4*5)) | (0xF<<(4*6)) | ((uint32_t)0xF<<(4*7)))); /* (2) */
+                     GPIO_MODER_MODE6_1 | GPIO_MODER_MODE7_1);
+  GPIOA->AFR[0] = (GPIOA->AFR[0] & ~((0xF<<(4*5)) | (0xF<<(4*6)) | ((uint32_t)0xF<<(4*7))));
+  GPIOA->OSPEEDR = (GPIOA->OSPEEDR & ~(GPIO_OSPEEDER_OSPEED5 | GPIO_OSPEEDER_OSPEED6 | GPIO_OSPEEDER_OSPEED7))\
+                  | (GPIO_OSPEEDER_OSPEED5_1 | GPIO_OSPEEDER_OSPEED6_1 | GPIO_OSPEEDER_OSPEED7_1); // set speed 10 Mhz
 
   // set CS for output on PB1
   GPIOB->MODER = (GPIOB->MODER & ~(GPIO_MODER_MODE1)) | GPIO_MODER_MODE1_0;
   GPIOB->PUPDR = (GPIOB->PUPDR & ~(GPIO_PUPDR_PUPD1)) | GPIO_PUPDR_PUPD1_0;
+  GPIOB->OSPEEDR = (GPIOB->OSPEEDR & ~(GPIO_OSPEEDER_OSPEED1)) | (GPIO_OSPEEDER_OSPEED1_1); // set speed 10 Mhz
 
   SPIRIT1_CS_DISABLE;
 
@@ -67,7 +70,7 @@ void SPIspirit_init()
   /* (1) Master selection, BR: Fpclk/256 (due to C13 on the board, SPI_CLK is set to the minimum)
         CPOL and CPHA at zero (rising first edge), 8-bit data frame */
   /* (2) Slave select output enabled, RXNE IT */
-  SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_BR_0; /* (1) */  // (16MHz) :2
+  SPI1->CR1 = SPI_CR1_MSTR; // | SPI_CR1_BR_0; /* (1) */  // (16MHz) :2
   SPI1->CR2 = SPI_CR2_SSOE; // | SPI_CR2_RXNEIE; /* (2) */
   SPI1->CR1 |= SPI_CR1_SPE; // Enable SPI
 
