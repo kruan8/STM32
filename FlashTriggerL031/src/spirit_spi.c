@@ -40,6 +40,11 @@
 #define READ_HEADER         BUILT_HEADER(HEADER_ADDRESS_MASK, HEADER_READ_MASK)  // macro to build the read header byte
 #define COMMAND_HEADER      BUILT_HEADER(HEADER_COMMAND_MASK, HEADER_WRITE_MASK) // macro to build the command header byte
 
+
+// promenne pro ukladani dat do registru
+uint8_t g_regCount;
+int16_t g_RegVal[300];
+
 void SPIspirit_init()
 {
   /* Enable the peripheral clock of GPIOA and GPIOB */
@@ -137,14 +142,14 @@ StatusBytes SPIspirit_WriteRegisters(uint8_t cRegAddress, uint8_t cNbBytes, uint
 {
   uint16_t status = SPIspirit_SendHeader(WRITE_HEADER, cRegAddress);
 
-//  g_RegVal[g_regCount++] = -1;
-//  g_RegVal[g_regCount++] = cRegAddress;
+  g_RegVal[g_regCount++] = -1;
+  g_RegVal[g_regCount++] = cRegAddress;
 
   /* Writes the registers according to the number of bytes */
   for (uint8_t i = 0; i < cNbBytes; i++)
   {
     SPIspirit_write(pcBuffer[i]);
-//    g_RegVal[g_regCount++] = pcBuffer[i];
+    g_RegVal[g_regCount++] = pcBuffer[i];
   }
 
   SPIspirit_Deactive();
@@ -184,8 +189,8 @@ StatusBytes SPIspirit_ReadRegisters(uint8_t cRegAddress, uint8_t cNbBytes, uint8
 */
 StatusBytes SPIspirit_CommandStrobes(uint8_t cCommandCode)
 {
-//  g_RegVal[g_regCount++] = -200;
-//  g_RegVal[g_regCount++] = cCommandCode;
+  g_RegVal[g_regCount++] = -200;
+  g_RegVal[g_regCount++] = cCommandCode;
   uint16_t status = SPIspirit_SendHeader(COMMAND_HEADER, cCommandCode);
 
   SPIspirit_Deactive();
