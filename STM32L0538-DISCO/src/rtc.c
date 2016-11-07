@@ -6,54 +6,61 @@
  */
 
 #include "rtc.h"
+#include <string.h>
+#include <stdio.h>
 
-void RTC_Configure(void)
+void RTC_Init(void)
 {
-  /* Enable the peripheral clock RTC */
-  /* (1) Enable the LSI */
-  /* (2) Wait while it is not ready */
-  /* (3) Enable PWR clock */
-  /* (4) Enable write in RTC domain control register */
-  /* (5) LSI for RTC clock */
-  /* (6) Disable PWR clock */
-  RCC->CSR |= RCC_CSR_LSION; /* (1) */
-  while((RCC->CSR & RCC_CSR_LSIRDY)!=RCC_CSR_LSIRDY) /* (2) */
+  RCC->APB1ENR |= RCC_APB1ENR_PWREN; // Enable PWR clock
+  PWR->CR |= PWR_CR_DBP; // Enable write in RTC domain control register
+  RCC->CSR |= RCC_CSR_LSEON; // Enable the LSE
+  while(!(RCC->CSR & RCC_CSR_LSERDY)) // Wait while it is not ready
   {
     /* add time out here for a robust application */
   }
-  RCC->APB1ENR |= RCC_APB1ENR_PWREN; /* (3) */
-  PWR->CR |= PWR_CR_DBP; /* (4) */
-  RCC->CSR = (RCC->CSR & ~RCC_CSR_RTCSEL) | RCC_CSR_RTCEN | RCC_CSR_RTCSEL_1; /* (5) */
-  RCC->APB1ENR &=~ RCC_APB1ENR_PWREN; /* (7) */
 
-  /* Configure RTC */
-  /* (7) Write access for RTC regsiters */
-  /* (8) Disable alarm A to modify it */
-  /* (9) Wait until it is allow to modify alarm A value */
-  /* (10) Modify alarm A mask to have an interrupt each 1Hz */
-  /* (11) Enable alarm A and alarm A interrupt */
-  /* (12) Disable write access */
-  RTC->WPR = 0xCA; /* (7) */
-  RTC->WPR = 0x53; /* (7) */
-  RTC->CR &=~ RTC_CR_ALRAE; /* (8) */
-  while((RTC->ISR & RTC_ISR_ALRAWF) != RTC_ISR_ALRAWF) /* (9) */
+  RCC->CSR = (RCC->CSR & ~RCC_CSR_RTCSEL) | RCC_CSR_RTCEN | RCC_CSR_RTCSEL_LSE; // LSE for RTC clock
+  RCC->APB1ENR &=~ RCC_APB1ENR_PWREN; // Disable PWR clock
+
+  // Write access for RTC registers
+  RTC->WPR = 0xCA;
+  RTC->WPR = 0x53;
+  RTC->ISR = RTC_ISR_INIT; // Enable init phase
+  while((RTC->ISR & RTC_ISR_INITF)!=RTC_ISR_INITF) // Wait until it is allow to modify RTC register values
   {
     /* add time out here for a robust application */
   }
-  RTC->ALRMAR = RTC_ALRMAR_MSK4 | RTC_ALRMAR_MSK3 | RTC_ALRMAR_MSK2 | RTC_ALRMAR_MSK1; /* (10) */
-  RTC->CR = RTC_CR_ALRAIE | RTC_CR_ALRAE; /* (11) */
-  RTC->WPR = 0xFE; /* (12) */
-  RTC->WPR = 0x64; /* (12) */
 
-  /* Configure exti and nvic for RTC IT */
-  /* (13) unmask line 17 */
-  /* (14) Rising edge for line 17 */
-  /* (15) Set priority */
-  /* (16) Enable RTC_IRQn */
-  EXTI->IMR |= EXTI_IMR_IM17; /* (13) */
-  EXTI->RTSR |= EXTI_RTSR_TR17; /* (14) */
-  NVIC_SetPriority(RTC_IRQn, 0); /* (15) */
-  NVIC_EnableIRQ(RTC_IRQn); /* (16) */
+  RTC->PRER = 0x007F00FF; // set prescaler, 32768/128 => 256 Hz, 256Hz/256 => 1Hz
+
+  RTC->ISR =~ RTC_ISR_INIT; // Disable init phase
+
+  // Disable write access for RTC registers
+  RTC->WPR = 0xFE;
+  RTC->WPR = 0x64;
+
+//  // Write access for RTC regsiters
+//  RTC->WPR = 0xCA;
+//  RTC->WPR = 0x53;
+//  RTC->CR &=~ RTC_CR_ALRAE; // Disable alarm A to modify it
+//  while((RTC->ISR & RTC_ISR_ALRAWF) != RTC_ISR_ALRAWF) // Wait until it is allow to modify alarm A value
+//  {
+//    /* add time out here for a robust application */
+//  }
+//
+//  // Modify alarm A mask to have an interrupt each 1Hz
+//  RTC->ALRMAR = RTC_ALRMAR_MSK4 | RTC_ALRMAR_MSK3 | RTC_ALRMAR_MSK2 | RTC_ALRMAR_MSK1;
+//  RTC->CR = RTC_CR_ALRAIE | RTC_CR_ALRAE; // Enable alarm A and alarm A interrupt
+//
+//  // Disable write access
+//  RTC->WPR = 0xFE;
+//  RTC->WPR = 0x64;
+//
+//  // Configure exti and nvic for RTC IT
+//  EXTI->IMR |= EXTI_IMR_IM17; // unmask line 17
+//  EXTI->RTSR |= EXTI_RTSR_TR17; // Rising edge for line 17
+//  NVIC_SetPriority(RTC_IRQn, 0); /* (15) */
+//  NVIC_EnableIRQ(RTC_IRQn); /* (16) */
 }
 
 /**
@@ -61,46 +68,90 @@ void RTC_Configure(void)
   * Param   uint32_t New time
   * Retval  None
   */
-void RTC_Init(uint32_t Time)
+void RTC_Set(rtc_time_t* time, rtc_date_t* date)
 {
-  /* RTC init mode */
-  /* Configure RTC */
-  /* (1) Write access for RTC registers */
-  /* (2) Enable init phase */
-  /* (3) Wait until it is allow to modify RTC register values */
-  /* (4) set prescaler, 40kHz/64 => 625 Hz, 625Hz/625 => 1Hz */
-  /* (5) New time in TR */
-  /* (6) Disable init phase */
-  /* (7) Disable write access for RTC registers */
-  RTC->WPR = 0xCA; /* (1) */
-  RTC->WPR = 0x53; /* (1) */
-  RTC->ISR = RTC_ISR_INIT; /* (2) */
-  while((RTC->ISR & RTC_ISR_INITF)!=RTC_ISR_INITF) /* (3) */
+  // Write access for RTC registers
+  RTC->WPR = 0xCA;
+  RTC->WPR = 0x53;
+  RTC->ISR = RTC_ISR_INIT; // Enable init phase
+  while((RTC->ISR & RTC_ISR_INITF)!=RTC_ISR_INITF) // Wait until it is allow to modify RTC register values
   {
     /* add time out here for a robust application */
   }
-  RTC->PRER = 0x003F0270; /* (4) */
-  RTC->TR = RTC_TR_PM | Time; /* (5) */
-  RTC->ISR =~ RTC_ISR_INIT; /* (6) */
-  RTC->WPR = 0xFE; /* (7) */
-  RTC->WPR = 0x64; /* (7) */
+
+  if (time != NULL)
+  {
+    uint32_t RegTime;
+    memcpy (&RegTime, time, sizeof (RegTime));
+    RTC->TR = RegTime;
+  }
+
+  if (date != NULL)
+  {
+    uint32_t RegDate;
+    memcpy (&RegDate, date, sizeof (RegDate));
+    RTC->DR = RegDate;
+  }
+
+  RTC->ISR =~ RTC_ISR_INIT; // Disable init phase
+
+  // Disable write access for RTC registers
+  RTC->WPR = 0xFE;
+  RTC->WPR = 0x64;
 }
 
-void RTC_Get()
+void RTC_GetDT(uint8_t *pBuffer, uint8_t length)
 {
-  uint8_t stringtosend[20] = "\n00 : 00 : 00 ";
-  uint32_t TimeToCompute = 0;
+  rtc_time_t time;
+  uint32_t TimeToCompute = RTC->TR; // get time
+  memcpy (&time, &TimeToCompute, sizeof (TimeToCompute));
 
-  TimeToCompute = RTC->TR; /* get time */
-  RTC->DR; /* need to read date also */
+  rtc_date_t date;
+  uint32_t DateToCompute = RTC->DR; // get date
+  memcpy (&date, &DateToCompute, sizeof (DateToCompute));
 
-  stringtosend[1] = (uint8_t)(((TimeToCompute & RTC_TR_HT)>>20) + 48);/* hour tens */
-  stringtosend[2] = (uint8_t)(((TimeToCompute & RTC_TR_HU)>>16) + 48);/* hour units */
-  stringtosend[6] = (uint8_t)(((TimeToCompute & RTC_TR_MNT)>>12) + 48);/* minute tens */
-  stringtosend[7] = (uint8_t)(((TimeToCompute & RTC_TR_MNU)>>8) + 48);/* minute units */
-  stringtosend[11] = (uint8_t)(((TimeToCompute & RTC_TR_ST)>>4) + 48);/* second tens */
-  stringtosend[12] = (uint8_t)((TimeToCompute & RTC_TR_SU) + 48);/* second units */
+  snprintf((char*)pBuffer, length, "%d.%d.%d %d:%d:%d",
+        RTC_GetDay(&date), RTC_GetMonth(&date), RTC_GetYear(&date),
+        RTC_GetHour(&time), RTC_GetMinute(&time), RTC_GetSecond(&time));
+}
 
-  /* start USART transmission */
-//  USART1->TDR = stringtosend[send++]; /* Will inititiate TC if TXE */
+void RTC_ClearTimeStruct(rtc_time_t* time)
+{
+  memset (time, 0, sizeof(time));
+}
+
+void RTC_ClearDateStruct(rtc_date_t* date)
+{
+  memset (date, 0, sizeof(date));
+
+}
+
+uint8_t RTC_GetSecond(rtc_time_t* time)
+{
+  return time->second10 * 10 + time->second;
+}
+
+uint8_t RTC_GetMinute(rtc_time_t* time)
+{
+  return time->minute10 * 10 + time->minute;
+}
+
+uint8_t RTC_GetHour(rtc_time_t* time)
+{
+  return time->hour10 * 10 + time->hour;
+}
+
+uint8_t RTC_GetDay(rtc_date_t* date)
+{
+  return date->day10 * 10 + date->day;
+}
+
+uint8_t RTC_GetMonth(rtc_date_t* date)
+{
+  return date->month10 * 10 + date->month;
+}
+
+uint8_t RTC_GetYear(rtc_date_t* date)
+{
+  return date->year10 * 10 + date->year;
 }

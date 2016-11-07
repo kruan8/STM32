@@ -9,6 +9,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include "rtc.h"
 
 #define BUFFER_SIZE  128
 
@@ -16,13 +18,10 @@ uint8_t g_BufferIn[BUFFER_SIZE];
 uint8_t g_BufferInPos;
 bool    g_bCommandReady;
 
-/**
-  * Brief   This function :
-             - Enables GPIO clock
-             - Configures the USART1 pins on GPIO PA9 PA10
-  * Param   None
-  * Retval  None
-  */
+const uint8_t T_Version[] = "Data logger v0.1";
+const uint8_t T_NewLine[] = "\r\n";
+
+
 void USART_Configure_GPIO(void)
 {
   /* Enable the peripheral clock of GPIOA */
@@ -85,9 +84,18 @@ void USART_ProcessCommand()
     case 'L':
       USART_SendList();
       break;
+    case 'D':
+      USART_SetDate();
+      break;
+    case 'T':
+      USART_SetTime();
+      break;
+    case 'I':
+      USART_SetInterval();
+      break;
     default:
-       USART_Puts("???\r\n");
-       break;
+      USART_PrintLine((uint8_t*)"???");
+      break;
   }
 
   g_BufferInPos = 0;
@@ -97,29 +105,119 @@ void USART_ProcessCommand()
 
 void USART_SendStatus()
 {
-  char text[128];
-  USART_Puts("Data logger v0.1\r\n");
-  snprintf(text, sizeof (text), "Pocet zaznamu: %d\r\n", 0);
-  USART_Puts(text);
+  uint8_t text[128];
+  USART_PrintLine(T_Version);
+  snprintf((char*)text, sizeof (text), "Pocet zaznamu: %d", 0);
+  USART_PrintLine(text);
 }
 
 void USART_SendList()
 {
-  USART_Puts("Zadne zaznamy\r\n");
+  USART_PrintLine((uint8_t*)"Zadne zaznamy");
 }
 
-void USART_Putc(char ch)
+void USART_SetDate()
+{
+  rtc_date_t date;
+
+  if (g_BufferIn[1])
+  {
+//    RTC_ClearDateStruct(&date);
+    const char s[2] = ".";
+    char *pos = strtok((char*)&g_BufferIn[1], s); // find first occure
+    uint8_t day = atoi(pos);
+
+    pos = strtok(NULL, s); // find first occure
+    uint8_t month = atoi(pos);
+
+    pos = strtok(NULL, s);
+    uint8_t year = atoi(pos);
+
+    date.day10 = day / 10;
+    date.day = day - date.day10 * 10;
+
+    date.month10 = month / 10;
+    date.month = month - date.month10 * 10;
+
+    date.year10 = year / 10;
+    date.year = year - date.year10 * 10;
+
+    date.week_day = 1;
+    RTC_Set(NULL, &date);
+  }
+
+  USART_PrintDateTime();
+}
+
+void USART_SetTime()
+{
+  rtc_time_t time;
+
+  if (g_BufferIn[1])
+  {
+    RTC_ClearTimeStruct(&time);
+    const char s[2] = ":";
+    char *pos = strtok((char*)&g_BufferIn[1], s); // find first occure
+    uint8_t hour = atoi(pos);
+
+    pos = strtok(NULL, s);  // find first occure
+    uint8_t minute = atoi(pos);
+
+    pos = strtok(NULL, s);
+    uint8_t second = atoi(pos);
+
+    time.hour10 = hour / 10;
+    time.hour = hour - time.hour10;
+
+    time.minute10 = minute / 10;
+    time.minute = minute - time.minute10;
+
+    time.second10 = second / 10;
+    time.second = second - time.second10;
+
+    RTC_Set(&time, NULL);
+  }
+
+  USART_PrintDateTime();
+}
+
+void USART_SetInterval()
+{
+  if (g_BufferIn[1])
+  {
+    uint8_t interval = atoi((char*)&g_BufferIn[1]);
+  }
+
+  uint8_t text[20];
+  snprintf((char*)text, sizeof(text), "Interval=%d", 0);
+  USART_PrintLine(text);
+}
+
+void USART_PrintDateTime()
+{
+  uint8_t text[20];
+  RTC_GetDT(text, sizeof(text));
+  USART_PrintLine(text);
+}
+
+void USART_Putc(uint8_t ch)
 {
   while (!(USART1->ISR & USART_ISR_TXE));
   USART1->TDR = ch;
 }
 
-void USART_Puts(const char *text)
+void USART_Puts(const uint8_t* text)
 {
   while (*text)
   {
     USART_Putc(*text++);
   }
+}
+
+void USART_PrintLine(const uint8_t* text)
+{
+  USART_Puts(text);
+  USART_Puts(T_NewLine);
 }
 
 void USART1_IRQHandler(void)

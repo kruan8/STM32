@@ -10,7 +10,7 @@
 #define OPTO_INPUT_PIN                  (1 << 1)  // in
 #define OPTO_INPUT_GPIO_PORT            GPIOA
 
-#define ADC_INPUT_TEMPERATURE           ADC_CHSELR_CHSEL1
+#define ADC_INPUT_TEMPERATURE           ADC_CHSELR_CHSEL4
 #define ADC_INPUT_REFINT                ADC_CHSELR_CHSEL17
 
 #define ADC_SAMPLES                   10
@@ -22,8 +22,9 @@
 void Adc_Init(void)
 {
   // Configure ADC INPUT pins as analog input
+  // asi neni treba konfigurovat, po resetu jsou vstupu v analog input
   RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
-  GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE1)) | GPIO_MODER_MODE1;
+//  GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE4)) | GPIO_MODER_MODE4;
 
   // Configure ADC
   RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;  // clock for ADC
@@ -106,6 +107,12 @@ uint16_t Adc_MeasureTemperature(void)
   }
 
   return (uint16_t) (nSumValue / ADC_SAMPLES);
+}
+
+int16_t Adc_CalcTemperature(uint16_t nValue)
+{
+  int32_t temp = (nValue * 3300 / 4095) - 500;
+  return (int16_t)temp;
 }
 
 uint16_t Adc_MeasureRefInt(void)

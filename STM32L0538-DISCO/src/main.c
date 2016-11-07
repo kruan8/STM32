@@ -11,6 +11,7 @@
 
 #include "adc.h"
 #include "FlashG25D10B.h"
+#include "rtc.h"
 
 int main(void)
 {
@@ -19,32 +20,43 @@ int main(void)
   USART_Configure_GPIO();
   USART_Configure();
 
-
   Adc_Init();
-  FlashG25D10_Init();
-
-  uint32_t id = FlashG25D10_GetID();
-  if (id != 0xC84011)
-  {
-    while(1);
-  }
-
-  uint8_t dataIn[] = {1, 2, 3, 4, 5};
-  uint8_t dataOut[5];
-
-  FlashG25D10Status_t status = FlashG25D10_GetStatus();
-
-  FlashG25D10_SectorErase(0);
-
-  FlashG25D10_WriteEnable();
-  FlashG25D10_PageProgram(0, dataIn, sizeof(dataIn));
-
-  FlashG25D10_ReadData(0, dataOut, sizeof (dataOut));
-
-  FlashG25D10_SectorErase(0);
-
+  int16_t temp = Adc_CalcTemperature(Adc_MeasureTemperature());
   uint16_t nVDDA = Adc_MeasureRefInt();
 
+
+  RTC_Init();
+//  rtc_time_t dt;
+////  RTC_Set(&dt);
+//
+//  uint8_t text[20];
+//  RTC_GetDT(text, sizeof(text));
+//
+//
+//  FlashG25D10_Init();
+//
+//  uint32_t id = FlashG25D10_GetID();
+//  if (id != 0xC84011)
+//  {
+//    while(1);
+//  }
+//
+//  uint8_t dataIn[] = {1, 2, 3, 4, 5};
+//  uint8_t dataOut[5];
+//
+//  FlashG25D10Status_t status = FlashG25D10_GetStatus();
+//
+//  FlashG25D10_SectorErase(0);
+//
+//  FlashG25D10_WriteEnable();
+//  FlashG25D10_PageProgram(0, dataIn, sizeof(dataIn));
+//
+//  FlashG25D10_ReadData(0, dataOut, sizeof (dataOut));
+//
+//  FlashG25D10_SectorErase(0);
+
+
+  USART_SendStatus();
 
   while (1)
   {
