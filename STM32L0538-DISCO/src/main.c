@@ -11,6 +11,7 @@
 
 #include "adc.h"
 #include "FlashG25D10B.h"
+#include "rtc.h"
 
 int main(void)
 {
@@ -19,6 +20,12 @@ int main(void)
   USART_Configure_GPIO();
   USART_Configure();
 
+  RTC_Init();
+  rtc_t dt;
+  RTC_Set(&dt);
+
+  uint8_t text[20];
+  RTC_Get(text, sizeof(text));
 
   Adc_Init();
   FlashG25D10_Init();
