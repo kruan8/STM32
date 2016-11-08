@@ -15,12 +15,14 @@
 #endif
 
 
-void Mot09_SoftPMDC_Init(void);
-void Mot09_SoftPMDC_SetPWM(motors_e motor, int16_t nPwmPerc);
-void Mot09_SoftPMDC_Timer_1ms(void);
+void Mot095_SoftPMDC_Init(void);
+void Mot095_SoftPMDC_SetPWM(motors_e motor, int16_t nPwmPerc);
+void Mot095_SoftPMDC_Timer_1ms(void);
 
-void Mot09_SoftPMDC_ConfigureSwitches();
-mot_limit_e Mot09_SoftPMDC_IsLimit(motors_e eMotor);
+void Mot095_SoftPMDC_ConfigureSwitches();
+mot_limit_e Mot095_SoftPMDC_IsLimit(motors_e eMotor);
+void Mot095_SoftPMDC_SetParam(motors_e motor, uint16_t nRamp, uint32_t nCycles);
+uint32_t Mot095_SoftPMDC_GetCycles(motors_e motor);
 
 #ifdef __cplusplus
 }

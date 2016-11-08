@@ -23,16 +23,18 @@ void Adc095_InitMultiplex();
 
 uint32_t Adc095_GetAngleM1();
 uint32_t Adc095_GetAngleM2();
-int32_t Adc095_GetCurrentM1_mA();
-int32_t Adc095_GetCurrentM2_mA();
+float Adc095_GetCurrentM1_mA();
+float Adc095_GetCurrentM2_mA();
 uint32_t Adc095_GetUdc_mV();
 int16_t Adc095_GetTempMCU_C();
 
 uint32_t Adc095_GetAcLineIn_mV();
 uint32_t Adc095_GetAcLineOut_mV();
 uint32_t Adc095_GetAdaptor_mV();
-int16_t Adc095_GetTempM1_C();
-int16_t Adc095_GetTempM2_C();
+uint16_t Adc095_GetTempM1_K();
+uint16_t Adc095_GetTempM2_K();
+uint16_t Adc095_GetTempHeatsinkM1_K();
+uint16_t Adc095_GetTempHeatsinkM2_K();
 uint32_t Adc095_GetBrakeCurrent_mA();
 uint32_t Adc095_GetPFC_mV();
 

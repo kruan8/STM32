@@ -45,4 +45,9 @@ uint8_t RTC_GetDay(rtc_date_t* date);
 uint8_t RTC_GetMonth(rtc_date_t* date);
 uint8_t RTC_GetYear(rtc_date_t* date);
 
+void RTC_Init(void);
+void RTC_Set(rtc_time_t* time, rtc_date_t* date);
+void RTC_Get(uint8_t *pBuffer, uint8_t length);
+
+
 #endif /* RTC_H_ */

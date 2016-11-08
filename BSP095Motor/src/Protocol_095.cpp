@@ -637,14 +637,10 @@ void B095_OnRx_MotorStart(void)
   uint16_t nRamp = (RxData[8] << 8) | RxData[9];
 
   TxData[0] = PID_MOTOR_START;
-  TxData[1] = 1;
-  if (nMotor < MOTORS)
-  {
-    TxData[1] = 0;
-    Tech095_SetParams(nMotor, nCycles, nSpeed, nRamp);
-    Tech095_Start(nMotor);
+  TxData[1] = 0;
 
-  }
+  Tech095_SetParams(nMotor, nCycles, nSpeed, nRamp);
+  Tech095_Start(nMotor);
 
   B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, 2);
 }
@@ -655,12 +651,9 @@ void B095_OnRx_MotorStop(void)
   uint8_t nMotor = RxData[1] & 0b1;
 
   TxData[0] = PID_MOTOR_STOP;
-  TxData[1] = 1;
-  if (nMotor < MOTORS)
-  {
-    TxData[1] = 0;
-    Tech095_Stop(nMotor);
-  }
+  TxData[1] = 0;
+
+  Tech095_Stop(nMotor);
 
   B095_Service_SendPacketDataResponse(SR_OK_PACKET_PROCESSED, TxData, 2);
 
@@ -669,17 +662,23 @@ void B095_OnRx_MotorStop(void)
 void B095_OnRx_GetInfo(void)
 {
   TxData[0] = PID_GET_INFO;
-  TxData[1] = RxData[1];
+  TxData[1] = RxData[1];    // vracime cislo motoru
+  uint8_t nMotor = RxData[1] & 0b1;
 
   uint16_t nPos = 2;
-  V200_ConvertU32ToArray(123, &TxData[nPos]); // pocet cyklu
+  V200_ConvertU32ToArray(Tech095_GetCycles(nMotor), &TxData[nPos]); // pocet cyklu
   nPos += 4;
 
-  int16_t nTemp = 0 + 273; // teplota bude v kelvinech
+  uint16_t nTemp = Adc095_GetTempHeatsinkM1_K();
+  if (nMotor == 1)
+  {
+    nTemp = Adc095_GetTempHeatsinkM2_K();
+  }
+
   TxData[nPos++] = (u8)(nTemp >> 8);
   TxData[nPos++] = (u8)(nTemp);
 
-  int16_t nPfcVoltage = 800; // teplota bude v kelvinech
+  int16_t nPfcVoltage = Adc095_GetPFC_mV() / 100; // napeti 0,1V
   TxData[nPos++] = (u8)(nPfcVoltage >> 8);
   TxData[nPos++] = (u8)(nPfcVoltage);
 
@@ -700,6 +699,7 @@ void B095_OnRx_GetData(void)
   static uint8_t nPacketID;
 
   // citac ID paketu (4 bity - cita dokola), pokud dorazi stejne ID, nemazat frontu, pokud jine, smazat vzorky
+  // nejvysi bit ID je RESET flag pro smazani fronty a vraceni nejmladsiho elementu
   uint8_t nIdAndReset = RxData[1];
 
   // predchozi paket se vzorky byl dorucen, uvolnime vzorky z bufferu
@@ -711,7 +711,7 @@ void B095_OnRx_GetData(void)
     }
   }
 
-  // nejvysi bit je RESET flag pro smazani fronty a vraceni nejmladsiho elementu
+  // je nastaven RESET flag pro smazani fronty?
   if (nIdAndReset & 0x80)
   {
     pSample = Tech095_QueueReset();
@@ -722,7 +722,7 @@ void B095_OnRx_GetData(void)
   }
 
   nPacketID = nIdAndReset & 0x7F;   // ulozit ID paketu bez reset flagu
-  TxData[0] = PID_REPLY_GET_DATA;
+  TxData[0] = PID_GET_DATA;
 
   u16 pos = 3;
 

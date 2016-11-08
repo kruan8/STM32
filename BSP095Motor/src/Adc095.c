@@ -17,9 +17,9 @@
 
 typedef enum
 {
-  adc1_current_M1,
+  adc1_current_M1 = 0,
   adc1_ref_current_M1,
-  adc1_angleM1 = 0,           // uhlovy snimac M1
+  adc1_angleM1,           // uhlovy snimac M1
   adc1_udc,                 // napajeci napeti vykonove casti (Udc)
   adc1_temp_internal,       // MCU core temperature
   adc1_max
@@ -27,7 +27,7 @@ typedef enum
 
 typedef enum
 {
-  adc2_current_M2,
+  adc2_current_M2 = 0,
   adc2_ref_current_M2,
   adc2_angleM2,               // uhlovy snimac M2
   adc2_max
@@ -68,8 +68,6 @@ void Adc095_Init(void)
 
   // hodiny do portu A
   RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOC | RCC_AHB1Periph_GPIOF, ENABLE);
-
-
 
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
@@ -198,27 +196,27 @@ void Adc095_Init(void)
   ADC_DMACmd(ADC1, ENABLE);             // Enable ADC1 DMA
   ADC_Cmd(ADC1, ENABLE);                // Enable ADC1
 
-  // Configure DMA2 - Channel 1 Stream 2 for ADC2
-  DMA_InitStructure.DMA_Channel = DMA_Channel_1;
-  DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) &ADC2->DR; // Source address
-  DMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t) g_nADC2Values; // Destination address
-  DMA_InitStructure.DMA_BufferSize = adc2_max;            // Buffer size
-  DMA_Init(DMA2_Stream2, &DMA_InitStructure);             // Initialize the DMA
-  DMA_Cmd(DMA2_Stream2, ENABLE);                  // Enable the DMA2 - Stream 4
-
-  ADC_DMACmd(ADC2, ENABLE);             // Enable ADC2 DMA
-  ADC_Cmd(ADC2, ENABLE);                // Enable ADC2
-
-  // Configure DMA2 - Stream 1 for ADC3
-  DMA_InitStructure.DMA_Channel = DMA_Channel_2;
-  DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) &ADC3->DR; // Source address
-  DMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t) g_nADC3Values; // Destination address
-  DMA_InitStructure.DMA_BufferSize = adc3_max;            // Buffer size
-  DMA_Init(DMA2_Stream1, &DMA_InitStructure);             // Initialize the DMA
-  DMA_Cmd(DMA2_Stream1, ENABLE);                  // Enable the DMA2 - Stream 4
-
-  ADC_DMACmd(ADC3, ENABLE);             // Enable ADC1 DMA
-  ADC_Cmd(ADC3, ENABLE);                // Enable ADC1
+//  // Configure DMA2 - Channel 1 Stream 2 for ADC2
+//  DMA_InitStructure.DMA_Channel = DMA_Channel_1;
+//  DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) &ADC2->DR; // Source address
+//  DMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t) g_nADC2Values; // Destination address
+//  DMA_InitStructure.DMA_BufferSize = adc2_max;            // Buffer size
+//  DMA_Init(DMA2_Stream2, &DMA_InitStructure);             // Initialize the DMA
+//  DMA_Cmd(DMA2_Stream2, ENABLE);                  // Enable the DMA2 - Stream 2
+//
+//  ADC_DMACmd(ADC2, ENABLE);             // Enable ADC2 DMA
+//  ADC_Cmd(ADC2, ENABLE);                // Enable ADC2
+//
+//  // Configure DMA2 - Stream 1 for ADC3
+//  DMA_InitStructure.DMA_Channel = DMA_Channel_2;
+//  DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) &ADC3->DR; // Source address
+//  DMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t) g_nADC3Values; // Destination address
+//  DMA_InitStructure.DMA_BufferSize = adc3_max;            // Buffer size
+//  DMA_Init(DMA2_Stream1, &DMA_InitStructure);             // Initialize the DMA
+//  DMA_Cmd(DMA2_Stream1, ENABLE);                  // Enable the DMA2 - Stream 1
+//
+//  ADC_DMACmd(ADC3, ENABLE);             // Enable ADC3 DMA
+//  ADC_Cmd(ADC3, ENABLE);                // Enable ADC3
 
   // povoleni preruseni pro DMA
   NVIC_InitTypeDef NVIC_InitStructure;
@@ -230,21 +228,27 @@ void Adc095_Init(void)
 
   DMA_ITConfig(DMA2_Stream4, DMA_IT_TC, ENABLE);// DMA transfer complete interrupt enable
 
-  NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream2_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 4;
-  NVIC_Init(&NVIC_InitStructure);
+//  NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream2_IRQn;
+//  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 4;
+//  NVIC_Init(&NVIC_InitStructure);
+//
+//  DMA_ITConfig(DMA2_Stream2, DMA_IT_TC, ENABLE);// DMA transfer complete interrupt enable
+//
+//  NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream1_IRQn;
+//  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 4;
+//  NVIC_Init(&NVIC_InitStructure);
 
-  DMA_ITConfig(DMA2_Stream2, DMA_IT_TC, ENABLE);// DMA transfer complete interrupt enable
+//  NVIC_InitStructure.NVIC_IRQChannel = ADC_IRQn;
+//  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 4;
+//  NVIC_Init(&NVIC_InitStructure);
+//  ADC_ITConfig(ADC1, ADC_IT_EOC, ENABLE);
 
-  NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream1_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 4;
-  NVIC_Init(&NVIC_InitStructure);
+//  DMA_ITConfig(DMA2_Stream1, DMA_IT_TC, ENABLE);// DMA transfer complete interrupt enable
 
-  DMA_ITConfig(DMA2_Stream1, DMA_IT_TC, ENABLE);// DMA transfer complete interrupt enable
-
-  Adc095_TIM_Configuration();
+//  Adc095_TIM_Configuration();
 
   ADC_SoftwareStartConv(ADC1);						// Start ADC1 conversion
+//  ADC_SoftwareStartConv(ADC2);            // Start ADC1 conversion
 }
 
 void Adc095_TIM_Configuration(void) {
@@ -285,10 +289,30 @@ void Adc095_TIM_Configuration(void) {
   TIM_Cmd(TIM4, ENABLE);
 }
 
+//void ADC_IRQHandler(void)
+//{
+//  uint32_t sr1 = ADC1->SR;
+//  uint32_t sr2 = ADC2->SR;
+//  uint32_t sr3 = ADC3->SR;
+//
+//  if (ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC))
+//  {
+//    ADC_ClearITPendingBit(ADC1, ADC_IT_EOC);
+//    ADC_SoftwareStartConv(ADC1);
+//  }
+//
+//
+//}
+
+
 // after group scan of ADC1
 void DMA2_Stream4_IRQHandler(void)
 {
-  DMA_ClearITPendingBit(DMA2_Stream4, DMA_FLAG_TCIF4);
+  if(DMA_GetITStatus(DMA2_Stream4, DMA_IT_TCIF4) != RESET)
+  {
+    DMA_ClearITPendingBit(DMA2_Stream4, DMA_IT_TCIF4);
+//    ADC_SoftwareStartConv(ADC1);
+  }
 
   g_nCycleCounter++;
   if (g_nCycleCounter > 1000)
@@ -298,11 +322,10 @@ void DMA2_Stream4_IRQHandler(void)
   }
 }
 
-
 // after group scan of ADC2
 void DMA2_Stream2_IRQHandler(void)
 {
-  DMA_ClearITPendingBit(DMA2_Stream2, DMA_FLAG_TCIF1);
+  DMA_ClearITPendingBit(DMA2_Stream2, DMA_FLAG_TCIF2);
 }
 
 // after group scan of ADC3
@@ -323,14 +346,14 @@ uint32_t Adc095_GetAngleM2()
   return (uint32_t)g_nADC2Values[adc2_angleM2] * ADC_REFERENCE_UNIT_UV;
 }
 
-int32_t Adc095_GetCurrentM1_mA()
+float Adc095_GetCurrentM1_mA()
 {
-  return (uint32_t)g_nADC1Values[adc1_current_M1] * ADC_REFERENCE_UNIT_UV;
+  return (g_nADC1Values[adc1_current_M1] - g_nADC1Values[adc1_ref_current_M1]) * 0.06456;
 }
 
-int32_t Adc095_GetCurrentM2_mA()
+float Adc095_GetCurrentM2_mA()
 {
-  return (uint32_t)g_nADC2Values[adc2_current_M2] * ADC_REFERENCE_UNIT_UV;
+  return (g_nADC2Values[adc2_current_M2] - g_nADC2Values[adc2_ref_current_M2]) * 0.06456;
 }
 
 uint32_t Adc095_GetUdc_mV()
@@ -373,16 +396,29 @@ uint32_t Adc095_GetAdaptor_mV()
   return g_nADC3Values[adc3_gen_adaptor] * 100000 / 11265;
 }
 
-int16_t Adc095_GetTempM1_C()
+// teplota motoru v Kelvinech
+uint16_t Adc095_GetTempM1_K()
 {
   // g_nADCConvertedValue[adc_in_temp_motor1]
-  return 241;
+  return 241 + 2730;
 }
 
-int16_t Adc095_GetTempM2_C()
+uint16_t Adc095_GetTempM2_K()
 {
   // g_nADCConvertedValue[adc_in_temp_motor2]
-  return 286;
+  return 286 + 2730;
+}
+
+uint16_t Adc095_GetTempHeatsinkM1_K()
+{
+  float v = 0.6077 - g_nADC3Values[adc3_temp_heatsinkM1] * 0.000807 / 0.0022 + 22;
+  return v * 10 + 273;
+}
+
+uint16_t Adc095_GetTempHeatsinkM2_K()
+{
+  float v = 0.6042 - g_nADC3Values[adc3_temp_heatsinkM2] * 0.000807 / 0.0022 + 22;
+  return v  * 10 + 273;
 }
 
 uint32_t Adc095_GetBrakeCurrent_mA()

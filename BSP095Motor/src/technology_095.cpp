@@ -33,55 +33,54 @@ u16 nQueueOut;          // pozice pro cteni
 u16 nCopySamples = 0;
 tech_data g_data;           // vzorek dat stavu (pozice+acc) pro master
 
-uint32_t g_nCycles[MOTORS];  // pocet cyklu jednotlivych motoru
 uint16_t g_nSpeed[MOTORS];   //
-uint16_t g_nRamp[MOTORS];    //
+
 
 void Tech095_Init()
 {
   Adc095_Init();
 
-  Mot09_SoftPMDC_Init();
+  Mot095_SoftPMDC_Init();
 
   Power_DriverOn(true);
 
 
 //	Mot095_Init();
-//	Tech095_QueueInit();
+	Tech095_QueueInit();
 //	Tenzo095_Init();
 
 //	Pos095_Init();
 
-	SwtInsertService(Tech095_Timer_2ms, 2, true);
+	SwtInsertService(Tech095_Timer_10ms, 10, true);
 
 }
 
 void Tech095_Exec()
 {
-  static int16_t nPerc = 30;
-
   if (Power_IsOn())
   {
-    for (uint8_t i = 0; i < MOTORS; i++)
+    for (uint8_t i = 0; i < 1; i++)
     {
-      mot_limit_e limit = Mot09_SoftPMDC_IsLimit((motors_e)i);
+      mot_limit_e limit = Mot095_SoftPMDC_IsLimit((motors_e)i);
       if (limit == mot_limit_up)
       {
-        nPerc = -30;
+        Mot095_SoftPMDC_SetPWM((motors_e)i, -(int16_t)g_nSpeed[i]);
       }
       else if (limit == mot_limit_down)
       {
-        nPerc = 30;
+        Mot095_SoftPMDC_SetPWM((motors_e)i, (int16_t)g_nSpeed[i]);
       }
-
-      Mot09_SoftPMDC_SetPWM((motors_e)i, nPerc);
     }
-
   }
 }
 
-void Tech095_Timer_2ms()
+void Tech095_Timer_10ms()
 {
+  g_data.nCurrentM1 = Adc095_GetCurrentM1_mA() / 100;
+  g_data.nCurrentM2 = Adc095_GetCurrentM2_mA() / 100;
+  g_data.nVoltageM1 = -123;
+  g_data.nVoltageM2 = -456;
+
 	Tech095_QueuePut(&g_data);
 }
 
@@ -94,9 +93,8 @@ void Tech095_SetParams(uint8_t motor, uint32_t nCycles, uint16_t nSpeed, uint16_
 {
   if (motor < MOTORS)
   {
-    g_nCycles[motor] = nCycles;
+    Mot095_SoftPMDC_SetParam((motors_e)motor, nRamp, nCycles);
     g_nSpeed[motor] = nSpeed;
-    g_nRamp[motor] = nRamp;
   }
 }
 
@@ -104,7 +102,7 @@ uint32_t Tech095_GetCycles(uint8_t motor)
 {
   if (motor < MOTORS)
   {
-    return g_nCycles[motor];
+    return Mot095_SoftPMDC_GetCycles((motors_e)motor);
   }
 
   return 0;
@@ -112,12 +110,12 @@ uint32_t Tech095_GetCycles(uint8_t motor)
 
 void Tech095_Start(uint8_t motor)
 {
-
+  Mot095_SoftPMDC_SetPWM((motors_e)motor, (int16_t)g_nSpeed[motor]);
 }
 
 void Tech095_Stop(uint8_t motor)
 {
-
+  Mot095_SoftPMDC_SetPWM((motors_e)motor, 0);
 }
 
 // -------------------------------------------------------------------------

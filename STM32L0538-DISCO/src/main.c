@@ -20,19 +20,13 @@ int main(void)
   USART_Configure_GPIO();
   USART_Configure();
 
+  RTC_Init();
+
+
   Adc_Init();
   int16_t temp = Adc_CalcTemperature(Adc_MeasureTemperature());
   uint16_t nVDDA = Adc_MeasureRefInt();
 
-
-  RTC_Init();
-//  rtc_time_t dt;
-////  RTC_Set(&dt);
-//
-//  uint8_t text[20];
-//  RTC_GetDT(text, sizeof(text));
-//
-//
 //  FlashG25D10_Init();
 //
 //  uint32_t id = FlashG25D10_GetID();

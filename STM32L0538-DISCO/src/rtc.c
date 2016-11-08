@@ -117,13 +117,13 @@ void RTC_GetDT(uint8_t *pBuffer, uint8_t length)
 
 void RTC_ClearTimeStruct(rtc_time_t* time)
 {
-  memset (time, 0, sizeof(time));
+  memset (time, 0, sizeof(rtc_time_t));
 }
 
 void RTC_ClearDateStruct(rtc_date_t* date)
 {
-  memset (date, 0, sizeof(date));
-
+  memset (date, 0, sizeof(rtc_date_t));
+  date->week_day = 1;
 }
 
 uint8_t RTC_GetSecond(rtc_time_t* time)
