@@ -18,7 +18,8 @@ void USART_SendStatus();
 void USART_SendList();
 void USART_SetDate();
 void USART_SetTime();
-void USART_SetInterval();
+void USART_SetWakeUpInterval();
+uint16_t USART_GetWakeUpInterval();
 void USART_PrintDateTime();
 
 void USART_Putc(uint8_t ch);

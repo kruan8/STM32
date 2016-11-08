@@ -18,28 +18,26 @@
 #include "technology_095.h"
 #include "BTL_USART.h"
 
+#include "Motors095_SoftPMDC.h"
+
 /*
  *  ------ Rozdeleni HW zdroju -------------------------------------------------------------
  *  PriorityGroupConfig = 4, takze nelze nastavovat subpriority preruseni
  *
- *      HW zdroj     | INT priorita | Modul       |   Pouziti                            | gener 2
- *      ----------------------------|-------------|----------------------------------------------------
- *      TIM1_CC1     |    1         | Adc_095     | casovani prevodu AD prevodniku       | TIM4_CH4
- *      TIM2         |              | Motors_095  | citani pulzu motoru 1                | N/A
- *      TIM3_CC3     |              | Motors_095  | tvorba PWM motoru 1                  | TIM1_CH1
- *      TIM5         |  ???         | Motors_095  | citani pulzu motoru 2                | N/A
- *      TIM8_CC3     |    1         | Motors_095  | tvorba PWM motoru 2                  | TIM8_CH1
- *      I2C2         |  ???         | i2c_int     | komunikace po I2C (EEPROM)
- *      SPI2         |  2/sub0      | Spi2        | komunikace SPI (external ADC)
- *      USART1       |  3/sub0      | BTL_USART   | komunikace master
- *      DMA2_Stream4 |  4/sub0      | Adc_095     | ukladani vysledku prevodu ADC1 (stream 4)
- *      SysTick      |  15          | HwtTimer    | SysTick timer
+ *      HW zdroj         | INT priorita | Modul                |   Pouziti
+ *      -----------------|--------------|----------------------|--------------------------------------
+ *      TIM1_CC1         |    1         | Motors095_SoftPMDC   | rizeni motoru M1 (spousti ADC1)
+ *      TIM8_CC1         |    1         | Motors095_SoftPMDC   | rizeni motoru M2 (spousti ADC2)
+ *      DMA2_Stream4Ch0  |    4         | Adc095               | ukladani vysledku prevodu ADC1
+ *      DMA2_Stream2Ch1  |    4         | Adc095               | ukladani vysledku prevodu ADC2
+ *      DMA2_Stream1Ch2  |    4         | Adc095               | ukladani vysledku prevodu ADC3
+ *      I2C2             |   ???        | i2c_int              | komunikace po I2C (EEPROM)
+ *      SPI2             |    2         | Spi2                 | komunikace SPI (external ADC)
+ *      USART1           |    3         | BTL_USART            | komunikace master
+ *
+ *      SysTick          |  15          | HwtTimer             | SysTick timer
  *
  * ---------------------------------------------------------------------------------------------
- *
- *       Memory            | Size     | Use
- *       ----------------------------------------------------------
- *       0x10000000 (CCM)  | 0x10000  | active sample buffer (64kB)
  *
  */
 
@@ -55,7 +53,6 @@ int main(void)
   __attribute__((unused)) uint32_t priority = NVIC_GetPriorityGrouping();
   NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
   priority = NVIC_GetPriorityGrouping();
-
 
   HwtInit(GPIOF, GPIO_Pin_13);
   SwtInit();

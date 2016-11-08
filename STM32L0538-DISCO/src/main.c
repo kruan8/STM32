@@ -13,6 +13,8 @@
 #include "FlashG25D10B.h"
 #include "rtc.h"
 
+uint8_t g_Measuring = 0;
+
 int main(void)
 {
 //  SysTick_Config(1000);
@@ -20,19 +22,12 @@ int main(void)
   USART_Configure_GPIO();
   USART_Configure();
 
+  RTC_Init();
+
   Adc_Init();
   int16_t temp = Adc_CalcTemperature(Adc_MeasureTemperature());
   uint16_t nVDDA = Adc_MeasureRefInt();
 
-
-  RTC_Init();
-//  rtc_time_t dt;
-////  RTC_Set(&dt);
-//
-//  uint8_t text[20];
-//  RTC_GetDT(text, sizeof(text));
-//
-//
 //  FlashG25D10_Init();
 //
 //  uint32_t id = FlashG25D10_GetID();
@@ -58,9 +53,19 @@ int main(void)
 
   USART_SendStatus();
 
-  while (1)
+  while (!g_Measuring)
   {
     USART_ProcessCommand();
+  }
+
+  RTC_SetWakeUp(USART_GetWakeUpInterval());
+  while (1)
+  {
+    // namerit teplotu
+
+    // ulozit do Flash
+
+    RTC_StopMode();
   }
 }
 

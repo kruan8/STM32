@@ -27,7 +27,7 @@ typedef struct
 
 void Tech095_Init();
 void Tech095_Exec();
-void Tech095_Timer_2ms();
+void Tech095_Timer_10ms();
 
 tech_data* Tech095_GetData();
 void Tech095_SetParams(uint8_t motor, uint32_t nCycles, uint16_t nSpeed, uint16_t nRamp);

@@ -30,9 +30,9 @@ typedef enum
 
 typedef enum
 {
-  dir_none = 0,
-	dir_down = 1,
-	dir_up = -1,
+  mot_dir_none = 0,
+	mot_dir_down = 1,
+	mot_dir_up = -1,
 } mot_direction_e;
 
 typedef enum

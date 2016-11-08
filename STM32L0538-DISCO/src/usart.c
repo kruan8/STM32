@@ -12,11 +12,14 @@
 #include <stdlib.h>
 #include "rtc.h"
 
+#define WAKEUP_INTERVAL_S    (30 * 60)  // 30 minut
+
 #define BUFFER_SIZE  128
 
 uint8_t g_BufferIn[BUFFER_SIZE];
 uint8_t g_BufferInPos;
 bool    g_bCommandReady;
+uint16_t g_nWakeUpInterval = WAKEUP_INTERVAL_S;
 
 const uint8_t T_Version[] = "Data logger v0.1";
 const uint8_t T_NewLine[] = "\r\n";
@@ -91,7 +94,7 @@ void USART_ProcessCommand()
       USART_SetTime();
       break;
     case 'I':
-      USART_SetInterval();
+      USART_SetWakeUpInterval();
       break;
     default:
       USART_PrintLine((uint8_t*)"???");
@@ -181,7 +184,7 @@ void USART_SetTime()
   USART_PrintDateTime();
 }
 
-void USART_SetInterval()
+void USART_SetWakeUpInterval()
 {
   if (g_BufferIn[1])
   {
@@ -191,6 +194,11 @@ void USART_SetInterval()
   uint8_t text[20];
   snprintf((char*)text, sizeof(text), "Interval=%d", 0);
   USART_PrintLine(text);
+}
+
+uint16_t USART_GetWakeUpInterval()
+{
+  return g_nWakeUpInterval;
 }
 
 void USART_PrintDateTime()

@@ -55,4 +55,3 @@ void SetGpioClock(GPIO_TypeDef* gpio, FunctionalState state)
 }
 
 
-

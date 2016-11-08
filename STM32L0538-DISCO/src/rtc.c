@@ -31,36 +31,43 @@ void RTC_Init(void)
     /* add time out here for a robust application */
   }
 
-  RTC->PRER = 0x007F00FF; // set prescaler, 32768/128 => 256 Hz, 256Hz/256 => 1Hz
+  RTC->PRER = 0x007F00FF;               // set prescaler, 32768/128 => 256 Hz, 256Hz/256 => 1Hz
+  RTC->CR &=~ RTC_CR_WUTE;
 
   RTC->ISR =~ RTC_ISR_INIT; // Disable init phase
 
   // Disable write access for RTC registers
   RTC->WPR = 0xFE;
   RTC->WPR = 0x64;
+}
 
-//  // Write access for RTC regsiters
-//  RTC->WPR = 0xCA;
-//  RTC->WPR = 0x53;
-//  RTC->CR &=~ RTC_CR_ALRAE; // Disable alarm A to modify it
-//  while((RTC->ISR & RTC_ISR_ALRAWF) != RTC_ISR_ALRAWF) // Wait until it is allow to modify alarm A value
-//  {
-//    /* add time out here for a robust application */
-//  }
-//
-//  // Modify alarm A mask to have an interrupt each 1Hz
-//  RTC->ALRMAR = RTC_ALRMAR_MSK4 | RTC_ALRMAR_MSK3 | RTC_ALRMAR_MSK2 | RTC_ALRMAR_MSK1;
-//  RTC->CR = RTC_CR_ALRAIE | RTC_CR_ALRAE; // Enable alarm A and alarm A interrupt
-//
-//  // Disable write access
-//  RTC->WPR = 0xFE;
-//  RTC->WPR = 0x64;
-//
-//  // Configure exti and nvic for RTC IT
-//  EXTI->IMR |= EXTI_IMR_IM17; // unmask line 17
-//  EXTI->RTSR |= EXTI_RTSR_TR17; // Rising edge for line 17
-//  NVIC_SetPriority(RTC_IRQn, 0); /* (15) */
-//  NVIC_EnableIRQ(RTC_IRQn); /* (16) */
+void RTC_SetWakeUp(uint16_t nInterval)
+{
+  RTC->WPR = 0xCA; /* (7) */
+  RTC->WPR = 0x53; /* (7) */
+  RTC->CR &=~ RTC_CR_WUTE; /* (8) */
+  while((RTC->ISR & RTC_ISR_WUTWF) != RTC_ISR_WUTWF) /* (9) */
+  {
+    /* add time out here for a robust application */
+  }
+
+  RTC->WUTR = nInterval;
+  RTC->CR = RTC_CR_WUCKSEL_2 | RTC_CR_WUCKSEL_1 | RTC_CR_WUTE | RTC_CR_WUTIE; /* (11) */
+  RTC->WPR = 0xFE; /* (12) */
+  RTC->WPR = 0x64; /* (12) */
+
+  EXTI->IMR |= EXTI_IMR_IM20;       // unmask line 20
+  EXTI->RTSR |= EXTI_RTSR_TR20;     // Rising edge for line 20
+  NVIC_SetPriority(RTC_IRQn, 0);    // Set priority
+  NVIC_EnableIRQ(RTC_IRQn);         // Enable RTC_IRQn
+}
+
+void RTC_StopMode(void)
+{
+  PWR->CR |= PWR_CR_CWUF;  // Clear Wakeup flag
+  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk; // Set SLEEPDEEP bit of Cortex-M0 System Control Register
+
+  __ASM volatile ("wfi");
 }
 
 /**
@@ -117,13 +124,13 @@ void RTC_GetDT(uint8_t *pBuffer, uint8_t length)
 
 void RTC_ClearTimeStruct(rtc_time_t* time)
 {
-  memset (time, 0, sizeof(time));
+  memset (time, 0, sizeof(rtc_time_t));
 }
 
 void RTC_ClearDateStruct(rtc_date_t* date)
 {
-  memset (date, 0, sizeof(date));
-
+  memset (date, 0, sizeof(rtc_date_t));
+  date->week_day = 1;
 }
 
 uint8_t RTC_GetSecond(rtc_time_t* time)
@@ -154,4 +161,14 @@ uint8_t RTC_GetMonth(rtc_date_t* date)
 uint8_t RTC_GetYear(rtc_date_t* date)
 {
   return date->year10 * 10 + date->year;
+}
+
+void RTC_IRQHandler(void)
+{
+  // Check WUT flag
+  if(RTC->ISR & RTC_ISR_WUTF)
+  {
+    RTC->ISR =~ RTC_ISR_WUTF; /* Reset Wake up flag */
+    EXTI->PR = EXTI_PR_PR20; /* clear exti line 20 flag */
+  }
 }

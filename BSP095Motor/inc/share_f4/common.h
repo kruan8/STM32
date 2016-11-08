@@ -14,4 +14,5 @@
 void SetGpioClock(GPIO_TypeDef* gpio, FunctionalState state);
 
 
+
 #endif /* SHARE_F4_COMMON_H_ */

@@ -25,10 +25,12 @@ typedef struct
 {
   int32_t nReqPwm;         // pozadovana frekvence motoru
   int32_t nActualPwm;          // aktualni frekvence motoru (pro frekvenci rampu)
-  mot_direction_e eDirection;       // smer aktivniho pohybu
+  mot_direction_e eDir_Actual;       // smer aktivniho pohybu
+  uint32_t nCycles;               // pocet cyklu
+  uint16_t nRamp;                 // dynamicka rampa zmeny rychlosti pohybu
 }mot_softpmdc_state_t;
 
-static mot_softpmdc_pins_t mot_pins[] =
+const static mot_softpmdc_pins_t mot_pins[] =
 {
  //   GPIO |  pin       | pin_source      | AF
     { GPIOE, GPIO_Pin_9,  GPIO_PinSource9,  GPIO_AF_TIM1 }, // IGBT1 Motor1
@@ -59,26 +61,23 @@ static mot_softpmdc_pins_t mot_pins[] =
 #define MOT_SOFTPMDC_M1T4_ON        (mot_pins[3].gpio->BSRRL = mot_pins[3].pin)
 #define MOT_SOFTPMDC_M1T4_OFF       (mot_pins[3].gpio->BSRRH = mot_pins[3].pin)
 
-#define MOT_SOFTPMDC_M2T1_ON        (mot_pins[4].gpio->BSRRL = mot_pins[4].pin)
-#define MOT_SOFTPMDC_M2T1_OFF       (mot_pins[4].gpio->BSRRH = mot_pins[4].pin)
+#define MOT_SOFTPMDC_M2T1_ON        (mot_pins[5].gpio->BSRRL = mot_pins[5].pin)
+#define MOT_SOFTPMDC_M2T1_OFF       (mot_pins[5].gpio->BSRRH = mot_pins[5].pin)
 
-#define MOT_SOFTPMDC_M2T2_ON        (mot_pins[5].gpio->BSRRL = mot_pins[5].pin)
-#define MOT_SOFTPMDC_M2T2_OFF       (mot_pins[5].gpio->BSRRH = mot_pins[5].pin)
+#define MOT_SOFTPMDC_M2T2_ON        (mot_pins[6].gpio->BSRRL = mot_pins[6].pin)
+#define MOT_SOFTPMDC_M2T2_OFF       (mot_pins[6].gpio->BSRRH = mot_pins[6].pin)
 
-#define MOT_SOFTPMDC_M2T3_ON        (mot_pins[6].gpio->BSRRL = mot_pins[6].pin)
-#define MOT_SOFTPMDC_M2T3_OFF       (mot_pins[6].gpio->BSRRH = mot_pins[6].pin)
+#define MOT_SOFTPMDC_M2T3_ON        (mot_pins[7].gpio->BSRRL = mot_pins[7].pin)
+#define MOT_SOFTPMDC_M2T3_OFF       (mot_pins[7].gpio->BSRRH = mot_pins[7].pin)
 
-#define MOT_SOFTPMDC_M2T4_ON        (mot_pins[7].gpio->BSRRL = mot_pins[7].pin)
-#define MOT_SOFTPMDC_M2T4_OFF       (mot_pins[7].gpio->BSRRH = mot_pins[7].pin)
+#define MOT_SOFTPMDC_M2T4_ON        (mot_pins[8].gpio->BSRRL = mot_pins[8].pin)
+#define MOT_SOFTPMDC_M2T4_OFF       (mot_pins[8].gpio->BSRRH = mot_pins[8].pin)
 
 static TIM_TypeDef* timDef[MOTORS] = { TIM1, TIM8 };
 
-static uint32_t g_nPwmPeriod[MOTORS];
-
 static mot_softpmdc_state_t g_motor[MOTORS];
-static uint16_t g_nPwmRamp = 10;               // dynamicka rampa zmeny rychlosti pohybu
 
-void Mot09_SoftPMDC_Init(void)
+void Mot095_SoftPMDC_Init(void)
 {
   // GPIO configuration
   GPIO_InitTypeDef GPIO_InitStructure;
@@ -86,7 +85,7 @@ void Mot09_SoftPMDC_Init(void)
 
   // Configure GPIO pins for TIM alternative functions
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
   GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
 
@@ -98,6 +97,14 @@ void Mot09_SoftPMDC_Init(void)
     GPIO_Init(mot_pins[i].gpio, &GPIO_InitStructure);
 //    GPIO_PinAFConfig(mot_pins[i].gpio, mot_pins[i].pin_source, mot_pins[i].pin_function);
   }
+
+  // PE0-PE7 nastavit na vstup s pullup odporem (ochrany)
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+  GPIO_InitStructure.GPIO_Pin = 0xFF;
+  GPIO_Init(GPIOE, &GPIO_InitStructure);
 
   // TIM configuration
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
@@ -113,31 +120,36 @@ void Mot09_SoftPMDC_Init(void)
   TIM_OCStructInit(&TIM_OCInitStructure);
 
   TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
-  TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Disable;
-  TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Enable;
-  TIM_OCInitStructure.TIM_Pulse = 0;
+  TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+  TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Disable;
+  TIM_OCInitStructure.TIM_Pulse = 1;
   TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+  TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_High;
+  TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Reset;
+  TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCIdleState_Reset;
 
   for (uint8_t i = 0; i < MOTORS; i++)
   {
     TIM_TimeBaseInit(timDef[i], &TIM_TimeBaseStructure);
-    g_nPwmPeriod[i] = TIM_TimeBaseStructure.TIM_Period;
 
     TIM_OC1Init(timDef[i], &TIM_OCInitStructure);
-    TIM_OC2Init(timDef[i], &TIM_OCInitStructure);
+//    TIM_OC2Init(timDef[i], &TIM_OCInitStructure);
 
-    TIM_BDTRInitTypeDef     TIM_BDTRInitStructure;
-    TIM_BDTRInitStructure.TIM_OSSRState = TIM_OSSRState_Enable;
-    TIM_BDTRInitStructure.TIM_OSSIState = TIM_OSSIState_Enable;
-    TIM_BDTRInitStructure.TIM_LOCKLevel = TIM_LOCKLevel_OFF;      // tady muzeme uzamknout nastaveni proti soft chybam
-    TIM_BDTRInitStructure.TIM_DeadTime = 10;
-    TIM_BDTRInitStructure.TIM_Break = TIM_Break_Disable;
-    TIM_BDTRInitStructure.TIM_BreakPolarity = TIM_BreakPolarity_High;
-    TIM_BDTRInitStructure.TIM_AutomaticOutput = TIM_AutomaticOutput_Disable;
+//    TIM_BDTRInitTypeDef     TIM_BDTRInitStructure;
+//    TIM_BDTRInitStructure.TIM_OSSRState = TIM_OSSRState_Enable;
+//    TIM_BDTRInitStructure.TIM_OSSIState = TIM_OSSIState_Enable;
+//    TIM_BDTRInitStructure.TIM_LOCKLevel = TIM_LOCKLevel_OFF;      // tady muzeme uzamknout nastaveni proti soft chybam
+//    TIM_BDTRInitStructure.TIM_DeadTime = 10;
+//    TIM_BDTRInitStructure.TIM_Break = TIM_Break_Disable;
+//    TIM_BDTRInitStructure.TIM_BreakPolarity = TIM_BreakPolarity_High;
+//    TIM_BDTRInitStructure.TIM_AutomaticOutput = TIM_AutomaticOutput_Disable;
+//
+//    TIM_BDTRConfig(timDef[i], &TIM_BDTRInitStructure);
 
-    TIM_BDTRConfig(timDef[i], &TIM_BDTRInitStructure);
     // TIM1/8 need extra command for BDTR register
     TIM_CtrlPWMOutputs(timDef[i], ENABLE);
+
+//    TIM_SelectOutputTrigger(timDef[i], TIM_TRGOSource_OC1Ref);
 
     TIM_Cmd(timDef[i], ENABLE);
   }
@@ -157,21 +169,32 @@ void Mot09_SoftPMDC_Init(void)
 //  DBGMCU_APB1PeriphConfig(DBGMCU_TIM1_STOP, ENABLE);
 //  DBGMCU_APB1PeriphConfig(DBGMCU_TIM8_STOP, ENABLE);
 
-  SwtInsertService(Mot09_SoftPMDC_Timer_1ms, 1, true);
+  SwtInsertService(Mot095_SoftPMDC_Timer_1ms, 1, true);
 
   TIM_ITConfig(timDef[0], TIM_IT_CC1, ENABLE);
   TIM_ITConfig(timDef[0], TIM_IT_CC2, ENABLE);
 
-  TIM_ITConfig(timDef[1], TIM_IT_CC1, ENABLE);
-  TIM_ITConfig(timDef[1], TIM_IT_CC2, ENABLE);
+//  TIM_ITConfig(timDef[1], TIM_IT_CC1, ENABLE);
+//  TIM_ITConfig(timDef[1], TIM_IT_CC2, ENABLE);
 }
 
-void Mot09_SoftPMDC_SetPWM(motors_e motor, int16_t nPwmPerc)
+void Mot095_SoftPMDC_SetPWM(motors_e motor, int16_t nPwmPerc)
 {
   g_motor[motor].nReqPwm = (int32_t)SOFTPMDC_PWM_RESOLUTION * nPwmPerc / 100;
 }
 
-void Mot09_SoftPMDC_Timer_1ms()
+void Mot095_SoftPMDC_SetParam(motors_e motor, uint16_t nRamp, uint32_t nCycles)
+{
+  g_motor[motor].nRamp = nRamp;
+  g_motor[motor].nCycles = nCycles;
+}
+
+uint32_t Mot095_SoftPMDC_GetCycles(motors_e motor)
+{
+  return g_motor[motor].nCycles;
+}
+
+void Mot095_SoftPMDC_Timer_1ms()
 {
   for (uint8_t i = 0; i < MOTORS; i++)
   {
@@ -183,13 +206,13 @@ void Mot09_SoftPMDC_Timer_1ms()
       }
 
       int32_t nDiff = g_motor[i].nReqPwm - g_motor[i].nActualPwm;
-      if (nDiff > g_nPwmRamp)
+      if (nDiff > g_motor[i].nRamp)
       {
-        nDiff = g_nPwmRamp;
+        nDiff = g_motor[i].nRamp;
       }
-      else if (nDiff < -g_nPwmRamp)
+      else if (nDiff < -g_motor[i].nRamp)
       {
-        nDiff = -g_nPwmRamp;
+        nDiff = -g_motor[i].nRamp;
       }
 
       g_motor[i].nActualPwm += nDiff;
@@ -197,10 +220,14 @@ void Mot09_SoftPMDC_Timer_1ms()
 
       TIM_SetCompare2(timDef[i], nPwm);
 
-      g_motor[i].eDirection = (g_motor[i].nActualPwm > 0) ? dir_down : dir_up;
+      mot_direction_e eDir = g_motor[i].eDir_Actual;
+      g_motor[i].eDir_Actual = (g_motor[i].nActualPwm > 0) ? mot_dir_down : mot_dir_up;
+      if (eDir == mot_dir_up && eDir != g_motor[i].eDir_Actual)
+      {
+        g_motor[i].nCycles++;
+      }
     }
   }
-
 }
 
 void TIM1_CC_IRQHandler()
@@ -208,19 +235,21 @@ void TIM1_CC_IRQHandler()
   // PWM pulse ON
   if ((TIM1->SR & TIM_IT_CC1) && (TIM1->DIER & TIM_IT_CC1))
   {
-    TIM1->SR = (uint16_t)~TIM_IT_CC1;  // clear pending bit
+    TIM1->SR &= (uint16_t)~TIM_IT_CC1;  // clear pending bit
 
-    if (g_motor[0].eDirection == dir_down)
+    if (g_motor[0].eDir_Actual == mot_dir_down)
     {
       MOT_SOFTPMDC_M1T2_OFF;
       MOT_SOFTPMDC_M1T3_OFF;
-      MOT_SOFTPMDC_M1T4_ON;
+      for (uint8_t i = 0; i < 7; i++);
       MOT_SOFTPMDC_M1T1_ON;
+      MOT_SOFTPMDC_M1T4_ON;
     }
     else
     {
       MOT_SOFTPMDC_M1T4_OFF;
       MOT_SOFTPMDC_M1T1_OFF;
+      for (uint8_t i = 0; i < 7; i++);
       MOT_SOFTPMDC_M1T2_ON;
       MOT_SOFTPMDC_M1T3_ON;
     }
@@ -228,11 +257,12 @@ void TIM1_CC_IRQHandler()
   // PWM pulse OFF
   else if ((TIM1->SR & TIM_IT_CC2) && (TIM1->DIER & TIM_IT_CC2))
   {
-    TIM1->SR = (uint16_t)~TIM_IT_CC2;  // clear pending bit
+    TIM1->SR &= (uint16_t)~TIM_IT_CC2;  // clear pending bit
 
     // pro oba smery
-    MOT_SOFTPMDC_M1T1_OFF;
     MOT_SOFTPMDC_M1T3_OFF;
+    MOT_SOFTPMDC_M1T1_OFF;
+    for (uint8_t i = 0; i < 7; i++);
     MOT_SOFTPMDC_M1T2_ON;
     MOT_SOFTPMDC_M1T4_ON;
   }
@@ -243,9 +273,9 @@ void TIM8_CC_IRQHandler()
   // PWM pulse ON
   if ((TIM8->SR & TIM_IT_CC1) && (TIM8->DIER & TIM_IT_CC1))
   {
-    TIM8->SR = (uint16_t)~TIM_IT_CC1;  // clear pending bit
+    TIM8->SR &= (uint16_t)~TIM_IT_CC1;  // clear pending bit
 
-    if (g_motor[0].eDirection == dir_down)
+    if (g_motor[1].eDir_Actual == mot_dir_down)
     {
       MOT_SOFTPMDC_M2T2_OFF;
       MOT_SOFTPMDC_M2T3_OFF;
@@ -263,7 +293,7 @@ void TIM8_CC_IRQHandler()
   // PWM pulse OFF
   else if ((TIM8->SR & TIM_IT_CC2) && (TIM8->DIER & TIM_IT_CC2))
   {
-    TIM8->SR = (uint16_t)~TIM_IT_CC2;  // clear pending bit
+    TIM8->SR &= (uint16_t)~TIM_IT_CC2;  // clear pending bit
 
     // pro oba smery
     MOT_SOFTPMDC_M2T1_OFF;
@@ -290,7 +320,7 @@ void TIM8_CC_IRQHandler()
 #define SOFTPMDC_SWITCH_DOWN_2_GPIO_PORT      GPIOG
 
 
-void Mot09_SoftPMDC_ConfigureSwitches()
+void Mot095_SoftPMDC_ConfigureSwitches()
 {
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
@@ -317,7 +347,7 @@ void Mot09_SoftPMDC_ConfigureSwitches()
   GPIO_Init(SOFTPMDC_SWITCH_DOWN_2_GPIO_PORT, &GPIO_InitStructure);
 }
 
-mot_limit_e Mot09_SoftPMDC_IsLimit(motors_e eMotor)
+mot_limit_e Mot095_SoftPMDC_IsLimit(motors_e eMotor)
 {
   mot_limit_e eStatus = mot_limit_none;
   if (eMotor == motor_1)
