@@ -31,6 +31,16 @@ typedef struct
   uint8_t year10: 4;
 } rtc_date_t;
 
+typedef struct
+{
+  uint8_t sec;
+  uint8_t min;
+  uint8_t hour;
+  uint8_t day;
+  uint8_t month;
+  uint16_t year;
+}rtc_record_time_t;
+
 void RTC_Init(void);
 void RTC_Set(rtc_time_t* time, rtc_date_t* date);
 void RTC_SetWakeUp(uint16_t nInterval);

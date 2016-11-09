@@ -9,6 +9,22 @@
 #include <string.h>
 #include <stdio.h>
 
+
+#define RTC_EPOCH_YR 1970            /* EPOCH = Jan 1 1970 00:00:00 */
+#define RTC_SECS_DAY (24L * 60L * 60L)
+
+#define LEAPYEAR(year)  (!((year) % 4) && (((year) % 100) || !((year) % 400)))  // zjisteni prestupneho roku
+#define YEARSIZE(year)  (LEAPYEAR(year) ? 366 : 365)              // pocet dnu roku (prestupny/neprestupny)
+
+// tabulka pro prevod z timestamp
+static const uint8_t ytab[2][12] = {{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
+                            {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
+
+// tabulky pro prevod do timestamp
+static const uint16_t mtha[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+static const uint16_t mthb[12] = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335};
+
+
 static volatile uint32_t g_nTicks = 0;
 static volatile uint32_t g_nUsartTimer;
 
@@ -183,6 +199,56 @@ void RTC_SetUsartTimer(uint32_t nInterval_ms)
 {
   g_nUsartTimer = nInterval_ms;
 }
+
+
+
+// prevede timestamp do struktury rtc_time_t
+// prevod unix timestamp -> time,date
+// unix timestamp = pocet sekund od 1.1.1970
+void rtc_convert_to_struct (uint32_t time, rtc_record_time_t* stime)
+{
+  uint32_t dayclock, dayno;
+  stime->year = RTC_EPOCH_YR;
+
+  dayclock = time % RTC_SECS_DAY;
+  dayno = time / RTC_SECS_DAY;
+
+  stime->sec = dayclock % 60;
+  stime->min = (dayclock % 3600) / 60;
+  stime->hour = dayclock / 3600;
+
+  while (dayno >= YEARSIZE(stime->year))
+  {
+    dayno -= YEARSIZE(stime->year);
+    stime->year++;
+  }
+
+  stime->month = 0;
+  while (dayno >= (ytab[LEAPYEAR(stime->year)][stime->month]))
+  {
+    dayno -= ytab[LEAPYEAR(stime->year)][stime->month];
+    stime->month++;
+  }
+
+  stime->month++;
+  stime->day = dayno + 1;
+}
+
+// prevod time,date pro DS1307 -> unix timestamp
+uint32_t rtc_convert_from_struct(rtc_record_time_t* stime)
+{
+  uint32_t time;
+  uint8_t year1 = stime->year + 30; // format 43
+  uint16_t year = (uint16_t)year1 + 1970; // format 2013
+  uint32_t day_sec = (uint32_t)stime->hour * 3600 + (uint16_t)stime->min * 60 + stime->sec;
+  time = (((!(year % 4)) && (year % 100)) || (!(year % 400)))?
+        (((((unsigned long int) year1 + 2) / 4)) + year1 * 365 + mthb[stime->month - 1] + (stime->day - 1)) * 86400 + day_sec:  // prestupny rok
+        (((((unsigned long int) year1 + 2) / 4)) + year1 * 365 + mtha[stime->month - 1] + (stime->day - 1)) * 86400 + day_sec;
+
+  return time;
+}
+
+
 
 void RTC_IRQHandler(void)
 {
