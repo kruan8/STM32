@@ -12,7 +12,8 @@
 #include <stdlib.h>
 #include "rtc.h"
 
-#define WAKEUP_INTERVAL_S    (30 * 60)  // 30 minut
+#define WAKEUP_INTERVAL_S    10  // 10 seconds
+//#define WAKEUP_INTERVAL_S    (30 * 60)  // 30 minut
 
 #define BUFFER_SIZE  128
 
@@ -21,7 +22,7 @@ uint8_t g_BufferInPos;
 bool    g_bCommandReady;
 uint16_t g_nWakeUpInterval = WAKEUP_INTERVAL_S;
 
-const uint8_t T_Version[] = "Data logger v0.1";
+const uint8_t T_Version[] = "DATA LOGGER v0.1";
 const uint8_t T_NewLine[] = "\r\n";
 
 
@@ -106,6 +107,15 @@ void USART_ProcessCommand()
   USART1->CR1 |= USART_CR1_RXNEIE;
 }
 
+void USART_PrintHeader()
+{
+  uint8_t text[128];
+  USART_PrintNewLine();
+  USART_PrintLine(T_Version);
+  snprintf((char*)text, sizeof (text), "Pocet zaznamu: %d", 0);
+  USART_PrintLine(text);
+}
+
 void USART_SendStatus()
 {
   uint8_t text[128];
@@ -123,9 +133,8 @@ void USART_SetDate()
 {
   rtc_date_t date;
 
-  if (g_BufferIn[1])
+  if (atoi((char*)&g_BufferIn[1]))  // pokud je první hodnota platné èíslo
   {
-//    RTC_ClearDateStruct(&date);
     const char s[2] = ".";
     char *pos = strtok((char*)&g_BufferIn[1], s); // find first occure
     uint8_t day = atoi(pos);
@@ -156,9 +165,8 @@ void USART_SetTime()
 {
   rtc_time_t time;
 
-  if (g_BufferIn[1])
+  if (atoi((char*)&g_BufferIn[1]))  // pokud je první hodnota platné èíslo
   {
-    RTC_ClearTimeStruct(&time);
     const char s[2] = ":";
     char *pos = strtok((char*)&g_BufferIn[1], s); // find first occure
     uint8_t hour = atoi(pos);
@@ -170,13 +178,13 @@ void USART_SetTime()
     uint8_t second = atoi(pos);
 
     time.hour10 = hour / 10;
-    time.hour = hour - time.hour10;
+    time.hour = hour - time.hour10 * 10;
 
     time.minute10 = minute / 10;
-    time.minute = minute - time.minute10;
+    time.minute = minute - time.minute10 * 10;
 
     time.second10 = second / 10;
-    time.second = second - time.second10;
+    time.second = second - time.second10 * 10;
 
     RTC_Set(&time, NULL);
   }
@@ -188,11 +196,15 @@ void USART_SetWakeUpInterval()
 {
   if (g_BufferIn[1])
   {
-    uint8_t interval = atoi((char*)&g_BufferIn[1]);
+    uint16_t nInterval = atoi((char*)&g_BufferIn[1]);
+    if (nInterval)
+    {
+      g_nWakeUpInterval = nInterval * 60;
+    }
   }
 
   uint8_t text[20];
-  snprintf((char*)text, sizeof(text), "Interval=%d", 0);
+  snprintf((char*)text, sizeof(text), "Interval=%d minut", g_nWakeUpInterval / 60);
   USART_PrintLine(text);
 }
 
@@ -228,6 +240,16 @@ void USART_PrintLine(const uint8_t* text)
   USART_Puts(T_NewLine);
 }
 
+void USART_PrintNewLine()
+{
+  USART_Puts(T_NewLine);
+}
+
+void USART_WaitForTC()
+{
+  while (!(USART1->ISR & USART_ISR_TC));
+}
+
 void USART1_IRQHandler(void)
 {
   if (g_bCommandReady)
@@ -237,6 +259,7 @@ void USART1_IRQHandler(void)
 
   if (USART1->ISR & USART_ISR_RXNE)
   {
+    RTC_SetUsartTimer(60000);
     g_BufferIn[g_BufferInPos] = USART1->RDR;
 
     // End of line!

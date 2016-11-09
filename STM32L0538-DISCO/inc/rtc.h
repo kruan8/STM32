@@ -36,8 +36,8 @@ void RTC_Set(rtc_time_t* time, rtc_date_t* date);
 void RTC_SetWakeUp(uint16_t nInterval);
 void RTC_GetDT(uint8_t *pBuffer, uint8_t length);
 
-void RTC_ClearTimeStruct(rtc_time_t* time);
-void RTC_ClearDateStruct(rtc_date_t* date);
+//void RTC_ClearTimeStruct(rtc_time_t* time);
+//void RTC_ClearDateStruct(rtc_date_t* date);
 
 uint8_t RTC_GetSecond(rtc_time_t* time);
 uint8_t RTC_GetMinute(rtc_time_t* time);
@@ -50,5 +50,9 @@ void RTC_Init(void);
 void RTC_Set(rtc_time_t* time, rtc_date_t* date);
 void RTC_Get(uint8_t *pBuffer, uint8_t length);
 
+void RTC_StopMode(void);
+uint32_t RTC_GetTicks();
+uint32_t RTC_GetUsartTimer();
+void RTC_SetUsartTimer(uint32_t nInterval_ms);
 
 #endif /* RTC_H_ */

@@ -9,6 +9,9 @@
 #include <string.h>
 #include <stdio.h>
 
+static volatile uint32_t g_nTicks = 0;
+static volatile uint32_t g_nUsartTimer;
+
 void RTC_Init(void)
 {
   RCC->APB1ENR |= RCC_APB1ENR_PWREN; // Enable PWR clock
@@ -52,7 +55,7 @@ void RTC_SetWakeUp(uint16_t nInterval)
   }
 
   RTC->WUTR = nInterval;
-  RTC->CR = RTC_CR_WUCKSEL_2 | RTC_CR_WUCKSEL_1 | RTC_CR_WUTE | RTC_CR_WUTIE; /* (11) */
+  RTC->CR = RTC_CR_WUCKSEL_2 | RTC_CR_WUTE | RTC_CR_WUTIE; /* (11) */
   RTC->WPR = 0xFE; /* (12) */
   RTC->WPR = 0x64; /* (12) */
 
@@ -64,10 +67,13 @@ void RTC_SetWakeUp(uint16_t nInterval)
 
 void RTC_StopMode(void)
 {
+  SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
   PWR->CR |= PWR_CR_CWUF;  // Clear Wakeup flag
   SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk; // Set SLEEPDEEP bit of Cortex-M0 System Control Register
 
   __ASM volatile ("wfi");
+  SCB->SCR &= (uint32_t)~((uint32_t)SCB_SCR_SLEEPDEEP_Msk);
+  SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
 }
 
 /**
@@ -117,21 +123,21 @@ void RTC_GetDT(uint8_t *pBuffer, uint8_t length)
   uint32_t DateToCompute = RTC->DR; // get date
   memcpy (&date, &DateToCompute, sizeof (DateToCompute));
 
-  snprintf((char*)pBuffer, length, "%d.%d.%d %d:%d:%d",
+  snprintf((char*)pBuffer, length, "%d.%d.%d %02d:%02d:%02d",
         RTC_GetDay(&date), RTC_GetMonth(&date), RTC_GetYear(&date),
         RTC_GetHour(&time), RTC_GetMinute(&time), RTC_GetSecond(&time));
 }
 
-void RTC_ClearTimeStruct(rtc_time_t* time)
-{
-  memset (time, 0, sizeof(rtc_time_t));
-}
-
-void RTC_ClearDateStruct(rtc_date_t* date)
-{
-  memset (date, 0, sizeof(rtc_date_t));
-  date->week_day = 1;
-}
+//void RTC_ClearTimeStruct(rtc_time_t* time)
+//{
+//  memset (time, 0, sizeof(rtc_time_t));
+//}
+//
+//void RTC_ClearDateStruct(rtc_date_t* date)
+//{
+//  memset (date, 0, sizeof(rtc_date_t));
+//  date->week_day = 1;
+//}
 
 uint8_t RTC_GetSecond(rtc_time_t* time)
 {
@@ -163,6 +169,21 @@ uint8_t RTC_GetYear(rtc_date_t* date)
   return date->year10 * 10 + date->year;
 }
 
+uint32_t RTC_GetTicks()
+{
+  return g_nTicks;
+}
+
+uint32_t RTC_GetUsartTimer()
+{
+  return g_nUsartTimer;
+}
+
+void RTC_SetUsartTimer(uint32_t nInterval_ms)
+{
+  g_nUsartTimer = nInterval_ms;
+}
+
 void RTC_IRQHandler(void)
 {
   // Check WUT flag
@@ -170,5 +191,14 @@ void RTC_IRQHandler(void)
   {
     RTC->ISR =~ RTC_ISR_WUTF; /* Reset Wake up flag */
     EXTI->PR = EXTI_PR_PR20; /* clear exti line 20 flag */
+  }
+}
+
+void SysTick_Handler(void)
+{
+  g_nTicks++;
+  if (g_nUsartTimer)
+  {
+    g_nUsartTimer--;
   }
 }
