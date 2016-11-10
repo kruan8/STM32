@@ -40,6 +40,8 @@ void Adc_Init(void)
   ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1; /* (4) */
 //  ADC1->IER = ADC_IER_EOCIE; // interrupt enable 'end of conversion'  (ADC_IER_EOSEQIE | ADC_IER_OVRIE)
 
+  ADC1->CFGR1 |= ADC_CFGR1_AUTOFF;
+
   // Calibrate ADC
   /* (1) Ensure that ADEN = 0 */
   /* (2) Clear ADEN */
@@ -59,18 +61,7 @@ void Adc_Init(void)
 
   ADC1->ISR |= ADC_ISR_EOCAL; /* (5) */
 
-  // Enable ADC
-  /* (1) Enable the ADC */
-  /* (2) Wait until ADC ready if AUTOFF is not set */
-  ADC1->CR |= ADC_CR_ADEN; /* (1) */
-  if ((ADC1->CFGR1 &  ADC_CFGR1_AUTOFF) == 0)
-  {
-    while ((ADC1->ISR & ADC_ISR_ADRDY) == 0) /* (2) */
-    {
-      /* For robust implementation, add here time-out management */
-    }
-  }
-
+  Adc_Enable();
 }
 
 void Adc_Disable()
@@ -92,6 +83,21 @@ void Adc_Disable()
   while ((ADC1->CR & ADC_CR_ADEN) != 0) /* (5) */
   {
     /* For robust implementation, add here time-out management */
+  }
+}
+
+void Adc_Enable()
+{
+  // Enable ADC
+  /* (1) Enable the ADC */
+  /* (2) Wait until ADC ready if AUTOFF is not set */
+  ADC1->CR |= ADC_CR_ADEN; /* (1) */
+  if ((ADC1->CFGR1 &  ADC_CFGR1_AUTOFF) == 0)
+  {
+    while ((ADC1->ISR & ADC_ISR_ADRDY) == 0) /* (2) */
+    {
+      /* For robust implementation, add here time-out management */
+    }
   }
 }
 

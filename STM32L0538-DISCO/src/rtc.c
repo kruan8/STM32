@@ -8,10 +8,12 @@
 #include "rtc.h"
 #include <string.h>
 #include <stdio.h>
+#include "adc.h"
 
 
-#define RTC_EPOCH_YR 1970            /* EPOCH = Jan 1 1970 00:00:00 */
+#define RTC_EPOCH_YR 2010            /* EPOCH = Jan 1 2010 00:00:00 */
 #define RTC_SECS_DAY (24L * 60L * 60L)
+#define RTC_MINUTES_DAY (24L * 60L)
 
 #define LEAPYEAR(year)  (!((year) % 4) && (((year) % 100) || !((year) % 400)))  // zjisteni prestupneho roku
 #define YEARSIZE(year)  (LEAPYEAR(year) ? 366 : 365)              // pocet dnu roku (prestupny/neprestupny)
@@ -83,13 +85,23 @@ void RTC_SetWakeUp(uint16_t nInterval)
 
 void RTC_StopMode(void)
 {
+//  Adc_Disable();
+
+  RCC->APB1ENR |= RCC_APB1ENR_PWREN; // Enable PWR clock
+  PWR->CR |= PWR_CR_ULP;
+
   SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
   PWR->CR |= PWR_CR_CWUF;  // Clear Wakeup flag
+  PWR->CR |= PWR_CR_LPSDSR;
   SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk; // Set SLEEPDEEP bit of Cortex-M0 System Control Register
 
   __ASM volatile ("wfi");
+
   SCB->SCR &= (uint32_t)~((uint32_t)SCB_SCR_SLEEPDEEP_Msk);
+  PWR->CR &= ~PWR_CR_LPSDSR;
   SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
+
+//  Adc_Enable();
 }
 
 /**
@@ -200,22 +212,17 @@ void RTC_SetUsartTimer(uint32_t nInterval_ms)
   g_nUsartTimer = nInterval_ms;
 }
 
-
-
-// prevede timestamp do struktury rtc_time_t
-// prevod unix timestamp -> time,date
-// unix timestamp = pocet sekund od 1.1.1970
-void rtc_convert_to_struct (uint32_t time, rtc_record_time_t* stime)
+void RTC_ConvertToStruct (uint32_t time, rtc_record_time_t* stime)
 {
   uint32_t dayclock, dayno;
   stime->year = RTC_EPOCH_YR;
 
-  dayclock = time % RTC_SECS_DAY;
-  dayno = time / RTC_SECS_DAY;
+  dayclock = time % RTC_MINUTES_DAY;
+  dayno = time / RTC_MINUTES_DAY;
 
-  stime->sec = dayclock % 60;
-  stime->min = (dayclock % 3600) / 60;
-  stime->hour = dayclock / 3600;
+  stime->sec = 0;  // dayclock % 60;
+  stime->min = dayclock % 60;
+  stime->hour = dayclock / 60;
 
   while (dayno >= YEARSIZE(stime->year))
   {
@@ -234,20 +241,18 @@ void rtc_convert_to_struct (uint32_t time, rtc_record_time_t* stime)
   stime->day = dayno + 1;
 }
 
-// prevod time,date pro DS1307 -> unix timestamp
-uint32_t rtc_convert_from_struct(rtc_record_time_t* stime)
+uint32_t RTC_ConvertFromStruct(rtc_record_time_t* stime)
 {
   uint32_t time;
-  uint8_t year1 = stime->year + 30; // format 43
-  uint16_t year = (uint16_t)year1 + 1970; // format 2013
-  uint32_t day_sec = (uint32_t)stime->hour * 3600 + (uint16_t)stime->min * 60 + stime->sec;
+  uint8_t year1 = stime->year - RTC_EPOCH_YR;
+  uint16_t year = (uint16_t)year1 + RTC_EPOCH_YR;
+  uint32_t day_min = (uint32_t)stime->hour * 60 + (uint16_t)stime->min;
   time = (((!(year % 4)) && (year % 100)) || (!(year % 400)))?
-        (((((unsigned long int) year1 + 2) / 4)) + year1 * 365 + mthb[stime->month - 1] + (stime->day - 1)) * 86400 + day_sec:  // prestupny rok
-        (((((unsigned long int) year1 + 2) / 4)) + year1 * 365 + mtha[stime->month - 1] + (stime->day - 1)) * 86400 + day_sec;
+        (((((unsigned long int) year1 + 2) / 4)) + year1 * 365 + mthb[stime->month - 1] + (stime->day - 1)) * 1440 + day_min:  // prestupny rok
+        (((((unsigned long int) year1 + 2) / 4)) + year1 * 365 + mtha[stime->month - 1] + (stime->day - 1)) * 1440 + day_min;
 
   return time;
 }
-
 
 
 void RTC_IRQHandler(void)

@@ -65,4 +65,7 @@ uint32_t RTC_GetTicks();
 uint32_t RTC_GetUsartTimer();
 void RTC_SetUsartTimer(uint32_t nInterval_ms);
 
+void RTC_ConvertToStruct (uint32_t time, rtc_record_time_t* stime);
+uint32_t RTC_ConvertFromStruct(rtc_record_time_t* stime);
+
 #endif /* RTC_H_ */

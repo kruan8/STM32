@@ -97,6 +97,9 @@ void USART_ProcessCommand()
     case 'I':
       USART_SetWakeUpInterval();
       break;
+    case 'X':
+      USART_EraseMemory();
+      break;
     default:
       USART_PrintLine((uint8_t*)"???");
       break;
@@ -190,6 +193,15 @@ void USART_SetTime()
   }
 
   USART_PrintDateTime();
+}
+
+void USART_EraseMemory()
+{
+  if (g_BufferIn[1] == '+' && g_BufferIn[2] == 'X')
+  {
+    // vymazat pamet
+
+  }
 }
 
 void USART_SetWakeUpInterval()

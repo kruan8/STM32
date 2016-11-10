@@ -16,7 +16,8 @@ typedef struct
 } record_t;
 
 
-
+void App_Init(void);
+void App_Measure(void);
 
 
 #endif /* APP_H_ */
