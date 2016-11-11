@@ -80,6 +80,7 @@ void USART_ProcessCommand()
   }
 
   strupr((char*)g_BufferIn);
+  USART_PrintLine(g_BufferIn);
   switch (g_BufferIn[0])
   {
     case 0:
@@ -109,14 +110,27 @@ void USART_ProcessCommand()
   g_BufferInPos = 0;
   g_bCommandReady = false;
   USART2->CR1 |= USART_CR1_RXNEIE;
+  USART_Putc('>');
 }
 
-void USART_PrintHeader()
+void USART_PrintHeader(uint32_t nRecords, uint32_t nBatVoltage)
 {
   uint8_t text[128];
   USART_PrintNewLine();
   USART_PrintLine(T_Version);
-  snprintf((char*)text, sizeof (text), "Pocet zaznamu: %d", 0);
+
+  snprintf((char*)text, sizeof (text), "Battery:%lu(mV)", nBatVoltage);
+  USART_PrintLine(text);
+
+  if (nRecords == 0xFFFFFFFF)
+  {
+    snprintf((char*)text, sizeof (text), "FULL MEMORY !!!");
+  }
+  else
+  {
+    snprintf((char*)text, sizeof (text), "Number of records:%lu", nRecords);
+  }
+
   USART_PrintLine(text);
 }
 
@@ -130,7 +144,8 @@ void USART_SendStatus()
 
 void USART_SendList()
 {
-  USART_PrintLine((uint8_t*)"Zadne zaznamy");
+  App_PrintRecords();
+
 }
 
 void USART_SetDate()

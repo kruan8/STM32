@@ -61,6 +61,7 @@ void Adc_Init(void)
 
   ADC1->ISR |= ADC_ISR_EOCAL; /* (5) */
 
+  ADC->CCR |= ADC_CCR_VREFEN;     // VREFINT enable
   Adc_Enable();
 }
 
@@ -115,16 +116,17 @@ uint16_t Adc_MeasureTemperature(void)
   return (uint16_t) (nSumValue / ADC_SAMPLES);
 }
 
-int16_t Adc_CalcTemperature(uint16_t nValue)
+int16_t Adc_CalcTemperature(uint16_t nValue, uint16_t nVDAA)
 {
   int32_t temp = (nValue * 3300 / 4095) - 500;
+//  int32_t temp = nVDAA * nValue / 4095;
   return (int16_t)temp;
 }
 
 uint16_t Adc_MeasureRefInt(void)
 {
   uint32_t nSumValue = 0;
-  ADC->CCR |= ADC_CCR_VREFEN;
+
   ADC1->CHSELR = ADC_INPUT_REFINT;       // channel
   for (uint8_t i = 0; i < ADC_SAMPLES; i++)
   {
@@ -133,10 +135,7 @@ uint16_t Adc_MeasureRefInt(void)
     nSumValue += ADC1->DR;
   }
 
-  ADC->CCR &= ~ADC_CCR_VREFEN;
-
   nSumValue /= ADC_SAMPLES;
-
   uint16_t nVrefIntCal = *VREFINT_CAL_ADDR;
 
   // VDDA = 3 V x VREFINT_CAL / VREFINT_DATA

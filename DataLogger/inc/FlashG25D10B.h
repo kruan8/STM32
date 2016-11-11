@@ -10,6 +10,12 @@
 
 #include "stm32l0xx.h"
 
+#define G25D10_PAGE_SIZE               0xFF
+#define G25D10_MEM_SIZE                0x20000
+#define G25D10_PAGES_PER_SECTOR        16
+#define G25D10_SECTOR_SIZE             4096
+#define G25D10_SECTORS                 32
+
 typedef enum
 {
   BP_NONE           =0x00,

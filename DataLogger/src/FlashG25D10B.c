@@ -32,6 +32,8 @@
 #define G25D10_STATUS_WEL              0x02
 #define G25D10_STATUS_SRP              0x80
 
+
+
 void FlashG25D10_Init(void)
 {
   SPI1Init();
@@ -73,6 +75,7 @@ void FlashG25D10_ReadData(uint32_t nAddr, uint8_t* pBuffer, uint8_t length)
 
 void FlashG25D10_PageProgram(uint32_t nAddr, uint8_t* pBuffer, uint8_t length)
 {
+  FlashG25D10_WriteEnable();
   CS_ENABLE;
   SPI1Write(G25D10_COMID_PAGE_PROGRAM);
   SPI1Write(nAddr >> 16);
@@ -90,9 +93,13 @@ void FlashG25D10_PageProgram(uint32_t nAddr, uint8_t* pBuffer, uint8_t length)
 
 void FlashG25D10_SectorErase(uint32_t nAddr)
 {
+  nAddr *= G25D10_SECTOR_SIZE;
   FlashG25D10_WriteEnable();
   CS_ENABLE;
   SPI1Write(G25D10_COMID_SECTOR_ERASE);
+  SPI1Write(nAddr >> 16);
+  SPI1Write(nAddr >> 8);
+  SPI1Write(nAddr);
   CS_DISABLE;
 
   while (FlashG25D10_GetStatus().WIP);

@@ -33,9 +33,6 @@ int main(void)
   while (1)
   {
     App_Measure();
-
     RTC_StopMode();
-
-    USART_PrintNewLine();
   }
 }

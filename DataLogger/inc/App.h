@@ -9,6 +9,7 @@
 #define APP_H_
 
 #include "stm32l0xx.h"
+#include <stdbool.h>
 
 typedef struct
 {
@@ -18,6 +19,7 @@ typedef struct
 
 void App_Init(void);
 void App_Measure(void);
-
+void App_FindFlashPosition();
+void App_PrintRecords();
 
 #endif /* APP_H_ */
