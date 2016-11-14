@@ -139,6 +139,8 @@ void RTC_Set(rtc_time_t* time, rtc_date_t* date)
   // Disable write access for RTC registers
   RTC->WPR = 0xFE;
   RTC->WPR = 0x64;
+
+  while (!(RTC->ISR & RTC_ISR_RSF));
 }
 
 void RTC_PrintDT(uint8_t *pBuffer, uint8_t length)

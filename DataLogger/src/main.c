@@ -29,6 +29,7 @@ int main(void)
   }
 
   USART_PrintLine((uint8_t*)"Exit to measure mode");
+  USART_WaitForTC();
   RTC_SetWakeUp(USART_GetWakeUpInterval());
   while (1)
   {

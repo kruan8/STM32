@@ -75,20 +75,35 @@ void FlashG25D10_ReadData(uint32_t nAddr, uint8_t* pBuffer, uint8_t length)
 
 void FlashG25D10_PageProgram(uint32_t nAddr, uint8_t* pBuffer, uint8_t length)
 {
-  FlashG25D10_WriteEnable();
-  CS_ENABLE;
-  SPI1Write(G25D10_COMID_PAGE_PROGRAM);
-  SPI1Write(nAddr >> 16);
-  SPI1Write(nAddr >> 8);
-  SPI1Write(nAddr);
-  while (length--)
+  uint16_t nBlockSize;
+  uint16_t nPhysSize;
+  while (length)
   {
-    SPI1Write(*pBuffer++);
+    nBlockSize = length;
+    nPhysSize = G25D10_PAGE_SIZE - (nAddr % G25D10_PAGE_SIZE);  // hranice fyzické stránky (PAGE SIZE)
+    if (length > nPhysSize)
+    {
+      nBlockSize = nPhysSize;
+    }
+
+    FlashG25D10_WriteEnable();
+    CS_ENABLE;
+    SPI1Write(G25D10_COMID_PAGE_PROGRAM);
+    SPI1Write(nAddr >> 16);
+    SPI1Write(nAddr >> 8);
+    SPI1Write(nAddr);
+    uint16_t nSize = nBlockSize;
+    while (nSize--)
+    {
+      SPI1Write(*pBuffer++);
+    }
+
+    CS_DISABLE;
+
+    while (FlashG25D10_GetStatus().WIP);
+    nAddr += nBlockSize;
+    length -= nBlockSize;
   }
-
-  CS_DISABLE;
-
-  while (FlashG25D10_GetStatus().WIP);
 }
 
 void FlashG25D10_SectorErase(uint32_t nAddr)
@@ -132,4 +147,9 @@ uint32_t FlashG25D10_GetID()
   CS_DISABLE;
 
   return nID;
+}
+
+bool FlashG25D10_IsPresent()
+{
+  return (FlashG25D10_GetID() == 0xC84011) ? true : false;
 }

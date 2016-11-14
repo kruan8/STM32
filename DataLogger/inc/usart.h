@@ -9,20 +9,21 @@
 #define USART_H_
 
 #include "stm32l0xx.h"
+#include "App.h"
 
 void USART_Configure(void);
 void USART_Configure_GPIO(void);
 
 void USART_ProcessCommand();
-void USART_PrintHeader(uint32_t nRecords, uint32_t nBatVoltage);
+void USART_PrintHeader(uint32_t nRecords, uint32_t nBatVoltage, app_error_t eErr);
 void USART_SendStatus();
 void USART_SendList();
 void USART_SetDate();
 void USART_SetTime();
+void USART_EraseMemory();
 void USART_SetWakeUpInterval();
 uint16_t USART_GetWakeUpInterval();
 void USART_PrintDateTime();
-void USART_EraseMemory();
 
 void USART_Putc(uint8_t ch);
 void USART_Puts(const uint8_t *text);

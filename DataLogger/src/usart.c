@@ -13,6 +13,7 @@
 #include "rtc.h"
 #include "FlashG25D10B.h"
 
+
 #define WAKEUP_INTERVAL_S    10  // 10 seconds
 //#define WAKEUP_INTERVAL_S    (30 * 60)  // 30 minut
 
@@ -113,7 +114,7 @@ void USART_ProcessCommand()
   USART_Putc('>');
 }
 
-void USART_PrintHeader(uint32_t nRecords, uint32_t nBatVoltage)
+void USART_PrintHeader(uint32_t nRecords, uint32_t nBatVoltage, app_error_t eErr)
 {
   uint8_t text[128];
   USART_PrintNewLine();
@@ -122,16 +123,19 @@ void USART_PrintHeader(uint32_t nRecords, uint32_t nBatVoltage)
   snprintf((char*)text, sizeof (text), "Battery:%lu(mV)", nBatVoltage);
   USART_PrintLine(text);
 
-  if (nRecords == 0xFFFFFFFF)
+  switch (eErr)
   {
-    snprintf((char*)text, sizeof (text), "FULL MEMORY !!!");
-  }
-  else
-  {
+  case err_flash_error:
+    USART_PrintLine((uint8_t*)"FLASH memory ERROR!");
+    break;
+  case err_full_memory:
+    USART_PrintLine((uint8_t*)"FULL MEMORY!");
+    break;
+  case err_ok:
     snprintf((char*)text, sizeof (text), "Number of records:%lu", nRecords);
+    USART_PrintLine(text);
+    break;
   }
-
-  USART_PrintLine(text);
 }
 
 void USART_SendStatus()
@@ -146,6 +150,23 @@ void USART_SendList()
 {
   App_PrintRecords();
 
+}
+
+void USART_EraseMemory()
+{
+  if (g_BufferIn[1] == '+' && g_BufferIn[2] == 'X')
+  {
+    // vymazat pamet
+    for (uint8_t i = 0; i < 32; i++)
+    {
+      FlashG25D10_SectorErase(i);
+      USART_Putc('.');
+    }
+
+    USART_PrintNewLine();
+    USART_PrintLine((uint8_t*)"Memory is erased");
+    App_FindFlashPosition();
+  }
 }
 
 void USART_SetDate()
@@ -209,22 +230,6 @@ void USART_SetTime()
   }
 
   USART_PrintDateTime();
-}
-
-void USART_EraseMemory()
-{
-  if (g_BufferIn[1] == '+' && g_BufferIn[2] == 'X')
-  {
-    // vymazat pamet
-    for (uint8_t i = 0; i < 32; i++)
-    {
-      FlashG25D10_SectorErase(i);
-      USART_Putc('.');
-    }
-
-    USART_PrintNewLine();
-    USART_PrintLine((uint8_t*)"Memory is erased");
-  }
 }
 
 void USART_SetWakeUpInterval()

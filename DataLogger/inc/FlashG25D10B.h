@@ -9,8 +9,9 @@
 #define FLASHG25D10B_H_
 
 #include "stm32l0xx.h"
+#include <stdbool.h>
 
-#define G25D10_PAGE_SIZE               0xFF
+#define G25D10_PAGE_SIZE               0x100
 #define G25D10_MEM_SIZE                0x20000
 #define G25D10_PAGES_PER_SECTOR        16
 #define G25D10_SECTOR_SIZE             4096
@@ -40,6 +41,6 @@ void FlashG25D10_WriteEnable();
 void FlashG25D10_WriteDisable();
 void FlashG25D10_PageProgram(uint32_t nAddr, uint8_t* pBuffer, uint8_t length);
 void FlashG25D10_SectorErase(uint32_t nAddr);
-
+bool FlashG25D10_IsPresent();
 
 #endif /* FLASHG25D10B_H_ */

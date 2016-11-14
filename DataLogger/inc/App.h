@@ -11,15 +11,19 @@
 #include "stm32l0xx.h"
 #include <stdbool.h>
 
-typedef struct
+typedef enum
 {
-
-} record_t;
+  err_ok,
+  err_full_memory,
+  err_flash_error,
+} app_error_t;
 
 
 void App_Init(void);
 void App_Measure(void);
 void App_FindFlashPosition();
 void App_PrintRecords();
+void App_SupplyOnAndWait();
+void App_SupplyOff();
 
 #endif /* APP_H_ */
