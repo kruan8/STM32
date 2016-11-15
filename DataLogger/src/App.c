@@ -82,6 +82,7 @@ void App_Measure(void)
   RTC_GetDT(&time, &date);
   RTC_ConvertFromRtc(&time, &date, &rtime);
   uint32_t dt = RTC_ConvertFromStruct(&rtime);
+  /****/ RTC_ConvertToStruct(dt, &rtime); /****/  // spatne pocita prestupny rok !!!
 
   // zmerit napajeci napeti VDDA
   uint16_t nVDDA = Adc_MeasureRefInt();

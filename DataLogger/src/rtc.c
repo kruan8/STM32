@@ -247,12 +247,13 @@ void RTC_ConvertToStruct (uint32_t time, rtc_record_time_t* stime)
 
   stime->month++;
   stime->day = dayno + 1;
+  stime->year -= 2000;
 }
 
 uint32_t RTC_ConvertFromStruct(rtc_record_time_t* stime)
 {
   uint32_t time;
-  uint8_t year1 = stime->year - RTC_EPOCH_YR;
+  uint8_t year1 = stime->year + 2000 - RTC_EPOCH_YR;
   uint16_t year = (uint16_t)year1 + RTC_EPOCH_YR;
   uint32_t day_min = (uint32_t)stime->hour * 60 + (uint16_t)stime->min;
   time = (((!(year % 4)) && (year % 100)) || (!(year % 400)))?
