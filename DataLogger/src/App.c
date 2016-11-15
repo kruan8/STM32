@@ -34,6 +34,13 @@ app_error_t g_eError = err_ok;
 
 void App_Init(void)
 {
+  // prepnuti CORE na Range3 (nelze flashovat)
+  RCC->APB1ENR |= RCC_APB1ENR_PWREN; // Enable PWR clock
+  while (PWR->CSR & PWR_CSR_VOSF);
+  PWR->CR |= PWR_CR_VOS_0 | PWR_CR_VOS_1;
+  while (PWR->CSR & PWR_CSR_VOSF);
+  RCC->APB1ENR &= ~RCC_APB1ENR_PWREN;
+
   App_SupplyOnAndWait();  // set SUPPLY pin for output
 
   USART_Configure_GPIO();
@@ -55,8 +62,7 @@ void App_Init(void)
 
   RTC_SetUsartTimer(10000);
 
-  uint32_t nRecords = g_nSector * RECORDS_PER_SECTOR + g_nSectorPosition / RECORD_SIZE;
-  USART_PrintHeader(nRecords, Adc_MeasureRefInt(), g_eError);
+  USART_PrintHeader(App_GetRecords(), Adc_MeasureRefInt(), g_eError);
   USART_Putc('>');
 }
 
@@ -115,6 +121,11 @@ void App_Measure(void)
   }
 
   App_SupplyOff();
+}
+
+uint32_t App_GetRecords()
+{
+  return g_nSector * RECORDS_PER_SECTOR + g_nSectorPosition / RECORD_SIZE;
 }
 
 void App_FindFlashPosition()
@@ -206,8 +217,12 @@ void App_PrintRecords()
 void App_SupplyOnAndWait()
 {
   RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
-  GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE2)) | GPIO_MODER_MODE2_0;  // output mode
-//  GPIOA->PUPDR = GPIOA->PUPDR & ~(GPIO_PUPDR_PUPD2);  // no push/pull
+
+  // output mode (napajeni MCP9700 + G25D10)
+  GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE2)) | GPIO_MODER_MODE2_0;
+
+  // vratit do AF (SPI1)
+  GPIOA->MODER = (GPIOA->MODER & (~GPIO_MODER_MODE7)) | GPIO_MODER_MODE7_1;
   SUPPLY_ENABLE;
 
 //  SetMSI(msi_65kHz);
@@ -220,5 +235,9 @@ void App_SupplyOnAndWait()
 void App_SupplyOff()
 {
   ADC->CCR &= ~ADC_CCR_VREFEN;     // disable VREFINT
+
   GPIOA->MODER = (GPIOA->MODER & (~GPIO_MODER_MODE2)) | GPIO_MODER_MODE2_0 | GPIO_MODER_MODE2_1; // analog mode
+
+  // tekl zde proud z PA7 (SPI MOSI), ktery se pres G25D10 objevil na PA2, na kterem vzniklo napeti 2,8V
+  GPIOA->MODER = (GPIOA->MODER & (~GPIO_MODER_MODE7)) | GPIO_MODER_MODE7_0 | GPIO_MODER_MODE7_1; // analog mode
 }

@@ -24,6 +24,9 @@ uint8_t g_BufferInPos;
 bool    g_bCommandReady;
 uint16_t g_nWakeUpInterval = WAKEUP_INTERVAL_S;
 
+uint32_t g_nRecords;
+uint32_t g_nBatVoltage;
+
 const uint8_t T_Version[] = "DATA LOGGER v0.1";
 const uint8_t T_NewLine[] = "\r\n";
 
@@ -85,8 +88,10 @@ void USART_ProcessCommand()
   switch (g_BufferIn[0])
   {
     case 0:
+      USART_PrintHelp();
+      break;
     case 'S':
-      USART_SendStatus();
+      USART_PrintStatus();
       break;
     case 'L':
       USART_SendList();
@@ -116,12 +121,15 @@ void USART_ProcessCommand()
 
 void USART_PrintHeader(uint32_t nRecords, uint32_t nBatVoltage, app_error_t eErr)
 {
-  uint8_t text[128];
+  g_nRecords = nRecords;
+  g_nBatVoltage = nBatVoltage;
+
   USART_PrintNewLine();
   USART_PrintLine(T_Version);
-
-  snprintf((char*)text, sizeof (text), "Battery:%lu(mV)", nBatVoltage);
-  USART_PrintLine(text);
+  USART_PrintStatus();
+  USART_PrintNewLine();
+  USART_PrintHelp();
+  USART_PrintNewLine();
 
   switch (eErr)
   {
@@ -132,18 +140,31 @@ void USART_PrintHeader(uint32_t nRecords, uint32_t nBatVoltage, app_error_t eErr
     USART_PrintLine((uint8_t*)"FULL MEMORY!");
     break;
   case err_ok:
-    snprintf((char*)text, sizeof (text), "Number of records:%lu", nRecords);
-    USART_PrintLine(text);
     break;
   }
 }
 
-void USART_SendStatus()
+void USART_PrintStatus()
 {
-  uint8_t text[128];
-  USART_PrintLine(T_Version);
-  snprintf((char*)text, sizeof (text), "Pocet zaznamu: %d", 0);
+  uint8_t text[50];
+
+  snprintf((char*)text, sizeof (text), "Battery:%lu(mV)", g_nBatVoltage);
   USART_PrintLine(text);
+  snprintf((char*)text, sizeof (text), "Interval:%d(min)", g_nWakeUpInterval / 60);
+  USART_PrintLine(text);
+  snprintf((char*)text, sizeof (text), "Number of records:%lu", g_nRecords);
+  USART_PrintLine(text);
+}
+
+void USART_PrintHelp()
+{
+  USART_PrintLine((uint8_t*)"Set date: 'D dd.mm.yy' (25.3.16)");
+  USART_PrintLine((uint8_t*)"Set time: 'T hh:mm' (14:10)");
+  USART_PrintLine((uint8_t*)"Set interval: 'I mm' (30)");
+  USART_PrintLine((uint8_t*)"List: 'L'");
+  USART_PrintLine((uint8_t*)"Erase memory: 'X-X'");
+  USART_PrintLine((uint8_t*)"Print status: 'S'");
+  USART_PrintLine((uint8_t*)"Print help: ENTER");
 }
 
 void USART_SendList()
@@ -166,6 +187,7 @@ void USART_EraseMemory()
     USART_PrintNewLine();
     USART_PrintLine((uint8_t*)"Memory is erased");
     App_FindFlashPosition();
+    g_nRecords = App_GetRecords();
   }
 }
 
@@ -183,7 +205,7 @@ void USART_SetDate()
     uint8_t month = atoi(pos);
 
     pos = strtok(NULL, s);
-    uint8_t year = atoi(pos);
+    uint16_t year = atoi(pos);
 
     date.day10 = day / 10;
     date.day = day - date.day10 * 10;
@@ -191,6 +213,7 @@ void USART_SetDate()
     date.month10 = month / 10;
     date.month = month - date.month10 * 10;
 
+    year %= 100;      // pouzit jenom desitky a jednotky
     date.year10 = year / 10;
     date.year = year - date.year10 * 10;
 
@@ -244,7 +267,7 @@ void USART_SetWakeUpInterval()
   }
 
   uint8_t text[20];
-  snprintf((char*)text, sizeof(text), "Interval=%d minut", g_nWakeUpInterval / 60);
+  snprintf((char*)text, sizeof(text), "Interval=%d min", g_nWakeUpInterval / 60);
   USART_PrintLine(text);
 }
 

@@ -21,6 +21,7 @@ typedef enum
 
 void App_Init(void);
 void App_Measure(void);
+uint32_t App_GetRecords();
 void App_FindFlashPosition();
 void App_PrintRecords();
 void App_SupplyOnAndWait();
