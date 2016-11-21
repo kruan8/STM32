@@ -12,10 +12,13 @@
 #include <stdlib.h>
 #include "rtc.h"
 #include "FlashG25D10B.h"
+#include "adc.h"
 
-
+#ifdef DEBUG
 #define WAKEUP_INTERVAL_S    10  // 10 seconds
-//#define WAKEUP_INTERVAL_S    (30 * 60)  // 30 minut
+#elif
+#define WAKEUP_INTERVAL_S    (30 * 60)  // 30 minut
+#endif
 
 #define BUFFER_SIZE  128
 
@@ -27,7 +30,7 @@ uint16_t g_nWakeUpInterval = WAKEUP_INTERVAL_S;
 uint32_t g_nRecords;
 uint32_t g_nBatVoltage;
 
-const uint8_t T_Version[] = "DATA LOGGER v0.1";
+const uint8_t T_Version[] = "---- DATA LOGGER v0.1 ----";
 const uint8_t T_NewLine[] = "\r\n";
 
 
@@ -148,7 +151,13 @@ void USART_PrintStatus()
 {
   uint8_t text[50];
 
-  snprintf((char*)text, sizeof (text), "Battery:%lu(mV)", g_nBatVoltage);
+  snprintf((char*)text, sizeof (text), "Date&time:");
+  USART_PrintLine(text);
+  uint16_t nVDDA = Adc_MeasureRefInt();
+  snprintf((char*)text, sizeof (text), "Battery:%d(mV)", nVDDA);
+  USART_PrintLine(text);
+  int16_t temp = Adc_CalcTemperature(Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA));
+  snprintf((char*)text, sizeof (text), "Temperature:%d.%d(C)", temp / 10, temp % 10);
   USART_PrintLine(text);
   snprintf((char*)text, sizeof (text), "Interval:%d(min)", g_nWakeUpInterval / 60);
   USART_PrintLine(text);
@@ -162,7 +171,7 @@ void USART_PrintHelp()
   USART_PrintLine((uint8_t*)"Set time: 'T hh:mm' (14:10)");
   USART_PrintLine((uint8_t*)"Set interval: 'I mm' (30)");
   USART_PrintLine((uint8_t*)"List: 'L'");
-  USART_PrintLine((uint8_t*)"Erase memory: 'X-X'");
+  USART_PrintLine((uint8_t*)"Erase memory: 'X+X'");
   USART_PrintLine((uint8_t*)"Print status: 'S'");
   USART_PrintLine((uint8_t*)"Print help: ENTER");
 }

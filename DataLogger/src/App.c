@@ -41,14 +41,13 @@ void App_Init(void)
   while (PWR->CSR & PWR_CSR_VOSF);
   RCC->APB1ENR &= ~RCC_APB1ENR_PWREN;
 
+  Adc_Init();
+  RTC_Init();
+
   App_SupplyOnAndWait();  // set SUPPLY pin for output
 
   USART_Configure_GPIO();
   USART_Configure();
-
-  RTC_Init();
-
-  Adc_Init();
 
   FlashG25D10_Init();
   if (FlashG25D10_IsPresent())
@@ -79,17 +78,36 @@ void App_Measure(void)
   rtc_date_t date;
   rtc_record_time_t rtime;
 
+  // -------------------------------------------------------
+//  date.day = 5;
+//  date.day10 = 1;
+//  date.month = 1;
+//  date.month10 = 1;
+//  date.year = 6;
+//  date.year10 = 1;
+//
+//  memset(&time, 0, sizeof(time));
+//  time.hour10 = 1;
+//  time.minute = 8;
+//  RTC_Set(&time, &date);
+//  RTC_GetDT(&time, &date);
+//  RTC_ConvertFromRtc(&time, &date, &rtime);
+//  uint32_t dt = RTC_ConvertFromStruct(&rtime);
+//  /****/ RTC_ConvertToStruct(dt, &rtime); /****/  // spatne pocita prestupny rok !!!
+// ---------------------------------------------------------------------------------------
+
   RTC_GetDT(&time, &date);
   RTC_ConvertFromRtc(&time, &date, &rtime);
   uint32_t dt = RTC_ConvertFromStruct(&rtime);
-  /****/ RTC_ConvertToStruct(dt, &rtime); /****/  // spatne pocita prestupny rok !!!
 
   // zmerit napajeci napeti VDDA
   uint16_t nVDDA = Adc_MeasureRefInt();
 
   // namerit teplotu
-  int16_t temp = Adc_CalcTemperature(Adc_MeasureTemperature(), nVDDA);
-  uint16_t tempADC = Adc_MeasureTemperature();
+
+
+  uint16_t tempADC = Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA);
+  int16_t temp = Adc_CalcTemperature(tempADC);
 
 #ifdef DEBUG
   uint8_t text[30];
@@ -206,7 +224,7 @@ void App_PrintRecords()
       rtc_record_time_t rtime;
       RTC_ConvertToStruct(dt, &rtime);
 
-      int16_t temperature = Adc_CalcTemperature(temp, 0);
+      int16_t temperature = Adc_CalcTemperature(temp);
       snprintf((char*)text, sizeof(text), "%d.%d.%d %02d:%02d>%d.%d",
           rtime.day, rtime.month, rtime.year, rtime.hour, rtime.min, temperature / 10, temperature % 10);
 

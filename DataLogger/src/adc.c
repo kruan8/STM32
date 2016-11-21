@@ -19,10 +19,12 @@
 #define TEMP130_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FF8007E))
 #define VREFINT_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FF80078))
 
+#define REF_MV     3000L
+
 void Adc_Init(void)
 {
   // Configure ADC INPUT pins as analog input
-  // asi neni treba konfigurovat, po resetu jsou vstupu v analog input
+  // asi neni treba konfigurovat, po resetu jsou vstupy v analog input
   RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
 //  GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE4)) | GPIO_MODER_MODE4;
 
@@ -37,10 +39,8 @@ void Adc_Init(void)
   ADC1->CFGR2 = (ADC1->CFGR2 & ~(ADC_CFGR2_CKMODE)) | ADC_CFGR2_CKMODE_0; // 01: PCLK/2 (Synchronous clock mode)
 //  ADC1->CFGR1 |= ADC_CFGR1_EXTEN_0 | ADC_CFGR1_EXTSEL_2 ; /* (2) */
 
-  ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1; /* (4) */
+  ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2; /* (4) */
 //  ADC1->IER = ADC_IER_EOCIE; // interrupt enable 'end of conversion'  (ADC_IER_EOSEQIE | ADC_IER_OVRIE)
-
-  ADC1->CFGR1 |= ADC_CFGR1_AUTOFF;
 
   // Calibrate ADC
   /* (1) Ensure that ADEN = 0 */
@@ -59,9 +59,10 @@ void Adc_Init(void)
     /* For robust implementation, add here time-out management */
   }
 
+  ADC->CCR |= ADC_CCR_VREFEN;     // enable VREFINT
+
   ADC1->ISR |= ADC_ISR_EOCAL; /* (5) */
 
-  ADC->CCR |= ADC_CCR_VREFEN;     // VREFINT enable
   Adc_Enable();
 }
 
@@ -89,6 +90,7 @@ void Adc_Disable()
 
 void Adc_Enable()
 {
+//  ADC1->CFGR1 |= ADC_CFGR1_AUTOFF;
   // Enable ADC
   /* (1) Enable the ADC */
   /* (2) Wait until ADC ready if AUTOFF is not set */
@@ -116,10 +118,15 @@ uint16_t Adc_MeasureTemperature(void)
   return (uint16_t) (nSumValue / ADC_SAMPLES);
 }
 
-int16_t Adc_CalcTemperature(uint16_t nValue, uint16_t nVDAA)
+uint16_t Adc_CalcValueFromVDDA(uint16_t nValue, uint16_t nVDDA)
 {
-  int32_t temp = (nValue * 3300 / 4095) - 500;
-//  int32_t temp = nVDAA * nValue / 4095;
+  return (uint32_t)nVDDA * nValue / REF_MV;
+}
+
+int16_t Adc_CalcTemperature(uint16_t nValue)
+{
+  // temperature coefficient MCP9700A = 10mV/C, 0C = 500mV
+  int32_t temp = (nValue * REF_MV / 4095) - 500;
   return (int16_t)temp;
 }
 

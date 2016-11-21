@@ -11,7 +11,7 @@
 #include "adc.h"
 
 
-#define RTC_EPOCH_YR 2010            /* EPOCH = Jan 1 2010 00:00:00 */
+#define RTC_EPOCH_YR 2000            /* EPOCH = Jan 1 2000 00:00:00 */
 #define RTC_SECS_DAY (24L * 60L * 60L)
 #define RTC_MINUTES_DAY (24L * 60L)
 

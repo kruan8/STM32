@@ -14,7 +14,8 @@ void Adc_Init(void);
 void Adc_Disable();
 void Adc_Enable();
 uint16_t Adc_MeasureTemperature(void);
-int16_t Adc_CalcTemperature(uint16_t nValue, uint16_t nVDAA);
+uint16_t Adc_CalcValueFromVDDA(uint16_t nValue, uint16_t nVDAA);
+int16_t Adc_CalcTemperature(uint16_t nValue);
 uint16_t Adc_MeasureRefInt(void);
 uint16_t Adc_Oversampling();
 
