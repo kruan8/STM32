@@ -10,6 +10,9 @@
 #include <stdio.h>
 #include "adc.h"
 
+#define RTC_TR_RESERVED_MASK    ((uint32_t)0x007F7F7F)
+#define RTC_DR_RESERVED_MASK    ((uint32_t)0x00FFFF3F)
+#define RTC_BCD2BIN(x)          ((((x) >> 4) & 0x0F) * 10 + ((x) & 0x0F))
 
 #define RTC_EPOCH_YR 2000            /* EPOCH = Jan 1 2000 00:00:00 */
 #define RTC_SECS_DAY (24L * 60L * 60L)
@@ -83,33 +86,7 @@ void RTC_SetWakeUp(uint16_t nInterval)
   NVIC_EnableIRQ(RTC_IRQn);         // Enable RTC_IRQn
 }
 
-void RTC_StopMode(void)
-{
-//  Adc_Disable();
-
-  RCC->APB1ENR |= RCC_APB1ENR_PWREN; // Enable PWR clock
-  PWR->CR |= PWR_CR_ULP;
-
-  SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
-  PWR->CR |= PWR_CR_CWUF;  // Clear Wakeup flag
-  PWR->CR |= PWR_CR_LPSDSR;
-  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk; // Set SLEEPDEEP bit of Cortex-M0 System Control Register
-
-  __ASM volatile ("wfi");
-
-  SCB->SCR &= (uint32_t)~((uint32_t)SCB_SCR_SLEEPDEEP_Msk);
-  PWR->CR &= ~PWR_CR_LPSDSR;
-  SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
-
-//  Adc_Enable();
-}
-
-/**
-  * Brief   This function configures RTC.
-  * Param   uint32_t New time
-  * Retval  None
-  */
-void RTC_Set(rtc_time_t* time, rtc_date_t* date)
+void RTC_Set(rtc_record_time_t *dt, bool bDate, bool bTime)
 {
   // Write access for RTC registers
   RTC->WPR = 0xCA;
@@ -120,18 +97,14 @@ void RTC_Set(rtc_time_t* time, rtc_date_t* date)
     /* add time out here for a robust application */
   }
 
-  if (time != NULL)
+  if (bDate)
   {
-    uint32_t RegTime;
-    memcpy (&RegTime, time, sizeof (RegTime));
-    RTC->TR = RegTime;
+    RTC->DR = RTC_ByteToBcd2(dt->year) << 16 | 1 << 13 | RTC_ByteToBcd2(dt->month) << 8 | RTC_ByteToBcd2(dt->day);
   }
 
-  if (date != NULL)
+  if (bTime)
   {
-    uint32_t RegDate;
-    memcpy (&RegDate, date, sizeof (RegDate));
-    RTC->DR = RegDate;
+    RTC->TR = RTC_ByteToBcd2(dt->hour) << 16 | RTC_ByteToBcd2(dt->min) << 8 | RTC_ByteToBcd2(dt->sec);
   }
 
   RTC->ISR =~ RTC_ISR_INIT; // Disable init phase
@@ -143,66 +116,27 @@ void RTC_Set(rtc_time_t* time, rtc_date_t* date)
   while (!(RTC->ISR & RTC_ISR_RSF));
 }
 
+void RTC_Get(rtc_record_time_t *dt)
+{
+  uint32_t value = (uint32_t)(RTC->TR & RTC_TR_RESERVED_MASK);
+
+  dt->hour = (uint8_t)(RTC_BCD2BIN((value >> 16) & 0x3F));
+  dt->min = (uint8_t)(RTC_BCD2BIN((value >> 8) & 0x7F));
+  dt->sec = (uint8_t)(RTC_BCD2BIN(value & 0x7F));
+
+  value = (uint32_t)(RTC->DR & RTC_DR_RESERVED_MASK);
+  dt->year = (uint8_t)(RTC_BCD2BIN((value >> 16) & 0xFF));
+  dt->month = (uint8_t)(RTC_BCD2BIN((value >> 8) & 0x1F));
+  dt->day = (uint8_t)(RTC_BCD2BIN(value & 0x3F));
+}
+
 void RTC_PrintDT(uint8_t *pBuffer, uint8_t length)
 {
-  rtc_time_t time;
-  rtc_date_t date;
+  rtc_record_time_t dt;
 
-  RTC_GetDT(&time, &date);
-
+  RTC_Get(&dt);
   snprintf((char*)pBuffer, length, "%d.%d.%d %02d:%02d:%02d",
-        RTC_GetDay(&date), RTC_GetMonth(&date), RTC_GetYear(&date),
-        RTC_GetHour(&time), RTC_GetMinute(&time), RTC_GetSecond(&time));
-}
-
-void RTC_GetDT(rtc_time_t* time, rtc_date_t* date)
-{
-  uint32_t TimeToCompute = RTC->TR; // get time
-  memcpy (time, &TimeToCompute, sizeof (TimeToCompute));
-
-  uint32_t DateToCompute = RTC->DR; // get date
-  memcpy (date, &DateToCompute, sizeof (DateToCompute));
-}
-
-//void RTC_ClearTimeStruct(rtc_time_t* time)
-//{
-//  memset (time, 0, sizeof(rtc_time_t));
-//}
-//
-//void RTC_ClearDateStruct(rtc_date_t* date)
-//{
-//  memset (date, 0, sizeof(rtc_date_t));
-//  date->week_day = 1;
-//}
-
-uint8_t RTC_GetSecond(rtc_time_t* time)
-{
-  return time->second10 * 10 + time->second;
-}
-
-uint8_t RTC_GetMinute(rtc_time_t* time)
-{
-  return time->minute10 * 10 + time->minute;
-}
-
-uint8_t RTC_GetHour(rtc_time_t* time)
-{
-  return time->hour10 * 10 + time->hour;
-}
-
-uint8_t RTC_GetDay(rtc_date_t* date)
-{
-  return date->day10 * 10 + date->day;
-}
-
-uint8_t RTC_GetMonth(rtc_date_t* date)
-{
-  return date->month10 * 10 + date->month;
-}
-
-uint8_t RTC_GetYear(rtc_date_t* date)
-{
-  return date->year10 * 10 + date->year;
+        dt.day, dt.month, dt.year, dt.hour, dt.min, dt.sec);
 }
 
 uint32_t RTC_GetTicks()
@@ -263,13 +197,29 @@ uint32_t RTC_ConvertFromStruct(rtc_record_time_t* stime)
   return time;
 }
 
-void RTC_ConvertFromRtc(rtc_time_t* time, rtc_date_t* date, rtc_record_time_t* rtime)
+uint8_t RTC_ByteToBcd2(uint8_t Value)
 {
-  rtime->day = date->day10 * 10 + date->day;
-  rtime->month = date->month10 * 10 + date->month;
-  rtime->year = date->year10 * 10 + date->year;
-  rtime->hour = time->hour10 * 10 + time->hour;
-  rtime->min = time->minute10 * 10 + time->minute;
+  uint8_t bcdhigh = 0;
+
+  while (Value >= 10)
+  {
+    bcdhigh++;
+    Value -= 10;
+  }
+
+  return  ((uint8_t)(bcdhigh << 4) | Value);
+}
+
+/**
+  * @brief  Convert from 2 digit BCD to Binary.
+  * @param  Value: BCD value to be converted.
+  * @retval Converted word
+  */
+uint8_t RTC_Bcd2ToByte(uint8_t Value)
+{
+  uint8_t tmp = 0;
+  tmp = ((uint8_t)(Value & (uint8_t)0xF0) >> (uint8_t)0x4) * 10;
+  return (tmp + (Value & (uint8_t)0x0F));
 }
 
 void RTC_IRQHandler(void)

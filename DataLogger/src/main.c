@@ -34,7 +34,7 @@ int main(void)
   SystemCoreClockUpdate();
   SysTick_Config(2097);
 
-  App_Init();
+  APP_Init();
 
   while (RTC_GetUsartTimer())
   {
@@ -46,7 +46,7 @@ int main(void)
   RTC_SetWakeUp(USART_GetWakeUpInterval());
   while (1)
   {
-    App_Measure();
-    RTC_StopMode();
+    APP_Measure();
+    APP_StopMode();
   }
 }

@@ -97,7 +97,7 @@ void USART_ProcessCommand()
       USART_PrintStatus();
       break;
     case 'L':
-      USART_SendList();
+      APP_PrintRecords();
       break;
     case 'D':
       USART_SetDate();
@@ -151,8 +151,9 @@ void USART_PrintStatus()
 {
   uint8_t text[50];
 
-  snprintf((char*)text, sizeof (text), "Date&time:");
-  USART_PrintLine(text);
+  snprintf((char*)text, sizeof (text), "Date&time: ");
+  USART_Print(text);
+  USART_PrintDateTime();
   uint16_t nVDDA = Adc_MeasureRefInt();
   snprintf((char*)text, sizeof (text), "Battery:%d(mV)", nVDDA);
   USART_PrintLine(text);
@@ -167,19 +168,14 @@ void USART_PrintStatus()
 
 void USART_PrintHelp()
 {
+  USART_PrintLine((uint8_t*)"COMMANDS:");
+  USART_PrintLine((uint8_t*)"Print status: 'S'");
   USART_PrintLine((uint8_t*)"Set date: 'D dd.mm.yy' (25.3.16)");
   USART_PrintLine((uint8_t*)"Set time: 'T hh:mm' (14:10)");
   USART_PrintLine((uint8_t*)"Set interval: 'I mm' (30)");
-  USART_PrintLine((uint8_t*)"List: 'L'");
+  USART_PrintLine((uint8_t*)"Temperature list: 'L'");
   USART_PrintLine((uint8_t*)"Erase memory: 'X+X'");
-  USART_PrintLine((uint8_t*)"Print status: 'S'");
   USART_PrintLine((uint8_t*)"Print help: ENTER");
-}
-
-void USART_SendList()
-{
-  App_PrintRecords();
-
 }
 
 void USART_EraseMemory()
@@ -195,39 +191,28 @@ void USART_EraseMemory()
 
     USART_PrintNewLine();
     USART_PrintLine((uint8_t*)"Memory is erased");
-    App_FindFlashPosition();
-    g_nRecords = App_GetRecords();
+    APP_FindFlashPosition();
+    g_nRecords = APP_GetRecords();
   }
 }
 
 void USART_SetDate()
 {
-  rtc_date_t date;
+  rtc_record_time_t rtime;
 
   if (atoi((char*)&g_BufferIn[1]))  // pokud je první hodnota platné èíslo
   {
     const char s[2] = ".";
     char *pos = strtok((char*)&g_BufferIn[1], s); // find first occure
-    uint8_t day = atoi(pos);
+    rtime.day = atoi(pos);
 
     pos = strtok(NULL, s); // find first occure
-    uint8_t month = atoi(pos);
+    rtime.month = atoi(pos);
 
     pos = strtok(NULL, s);
-    uint16_t year = atoi(pos);
+    rtime.year = atoi(pos);
 
-    date.day10 = day / 10;
-    date.day = day - date.day10 * 10;
-
-    date.month10 = month / 10;
-    date.month = month - date.month10 * 10;
-
-    year %= 100;      // pouzit jenom desitky a jednotky
-    date.year10 = year / 10;
-    date.year = year - date.year10 * 10;
-
-    date.week_day = 1;
-    RTC_Set(NULL, &date);
+    RTC_Set(&rtime, true, false);
   }
 
   USART_PrintDateTime();
@@ -235,30 +220,21 @@ void USART_SetDate()
 
 void USART_SetTime()
 {
-  rtc_time_t time;
+  rtc_record_time_t rtime;
 
   if (atoi((char*)&g_BufferIn[1]))  // pokud je první hodnota platné èíslo
   {
     const char s[2] = ":";
     char *pos = strtok((char*)&g_BufferIn[1], s); // find first occure
-    uint8_t hour = atoi(pos);
+    rtime.hour = atoi(pos);
 
     pos = strtok(NULL, s);  // find first occure
-    uint8_t minute = atoi(pos);
+    rtime.min = atoi(pos);
 
     pos = strtok(NULL, s);
-    uint8_t second = atoi(pos);
+    rtime.sec = atoi(pos);
 
-    time.hour10 = hour / 10;
-    time.hour = hour - time.hour10 * 10;
-
-    time.minute10 = minute / 10;
-    time.minute = minute - time.minute10 * 10;
-
-    time.second10 = second / 10;
-    time.second = second - time.second10 * 10;
-
-    RTC_Set(&time, NULL);
+    RTC_Set(&rtime, false, true);
   }
 
   USART_PrintDateTime();
@@ -298,7 +274,7 @@ void USART_Putc(uint8_t ch)
   USART2->TDR = ch;
 }
 
-void USART_Puts(const uint8_t* text)
+void USART_Print(const uint8_t* text)
 {
   while (*text)
   {
@@ -308,13 +284,13 @@ void USART_Puts(const uint8_t* text)
 
 void USART_PrintLine(const uint8_t* text)
 {
-  USART_Puts(text);
-  USART_Puts(T_NewLine);
+  USART_Print(text);
+  USART_Print(T_NewLine);
 }
 
 void USART_PrintNewLine()
 {
-  USART_Puts(T_NewLine);
+  USART_Print(T_NewLine);
 }
 
 void USART_WaitForTC()

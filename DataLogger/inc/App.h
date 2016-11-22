@@ -19,12 +19,13 @@ typedef enum
 } app_error_t;
 
 
-void App_Init(void);
-void App_Measure(void);
-uint32_t App_GetRecords();
-void App_FindFlashPosition();
-void App_PrintRecords();
-void App_SupplyOnAndWait();
-void App_SupplyOff();
+void APP_Init(void);
+void APP_Measure(void);
+uint32_t APP_GetRecords();
+void APP_FindFlashPosition();
+void APP_PrintRecords();
+void APP_SupplyOnAndWait();
+void APP_SupplyOff();
+void APP_StopMode(void);
 
 #endif /* APP_H_ */

@@ -32,7 +32,7 @@ uint16_t g_nSectorPosition;
 
 app_error_t g_eError = err_ok;
 
-void App_Init(void)
+void APP_Init(void)
 {
   // prepnuti CORE na Range3 (nelze flashovat)
   RCC->APB1ENR |= RCC_APB1ENR_PWREN; // Enable PWR clock
@@ -44,7 +44,7 @@ void App_Init(void)
   Adc_Init();
   RTC_Init();
 
-  App_SupplyOnAndWait();  // set SUPPLY pin for output
+  APP_SupplyOnAndWait();  // set SUPPLY pin for output
 
   USART_Configure_GPIO();
   USART_Configure();
@@ -52,7 +52,7 @@ void App_Init(void)
   FlashG25D10_Init();
   if (FlashG25D10_IsPresent())
   {
-    App_FindFlashPosition();
+    APP_FindFlashPosition();
   }
   else
   {
@@ -61,51 +61,41 @@ void App_Init(void)
 
   RTC_SetUsartTimer(10000);
 
-  USART_PrintHeader(App_GetRecords(), Adc_MeasureRefInt(), g_eError);
+  USART_PrintHeader(APP_GetRecords(), Adc_MeasureRefInt(), g_eError);
   USART_Putc('>');
 }
 
-void App_Measure(void)
+void APP_Measure(void)
 {
   if (g_eError)
   {
     return;
   }
 
-  App_SupplyOnAndWait();
+  APP_SupplyOnAndWait();
 
-  rtc_time_t time;
-  rtc_date_t date;
-  rtc_record_time_t rtime;
+  rtc_record_time_t dt;
 
-  // -------------------------------------------------------
-//  date.day = 5;
-//  date.day10 = 1;
-//  date.month = 1;
-//  date.month10 = 1;
-//  date.year = 6;
-//  date.year10 = 1;
-//
-//  memset(&time, 0, sizeof(time));
-//  time.hour10 = 1;
-//  time.minute = 8;
-//  RTC_Set(&time, &date);
-//  RTC_GetDT(&time, &date);
-//  RTC_ConvertFromRtc(&time, &date, &rtime);
-//  uint32_t dt = RTC_ConvertFromStruct(&rtime);
-//  /****/ RTC_ConvertToStruct(dt, &rtime); /****/  // spatne pocita prestupny rok !!!
-// ---------------------------------------------------------------------------------------
+//  // ---------- Test RTC ---------------------------------------------------------
+//  dt.day = 15;
+//  dt.month = 11;
+//  dt.year = 16;
+//  dt.hour = 18;
+//  dt.min = 25;
+//  RTC_Set(&dt, true, true);
+//  RTC_Get(&dt);
+//  uint32_t t = RTC_ConvertFromStruct(&dt);
+//  /****/ RTC_ConvertToStruct(t, &dt); /****/  // spatne pocita prestupny rok !!!
+//  // --------------------------------------------------------------------------------
 
-  RTC_GetDT(&time, &date);
-  RTC_ConvertFromRtc(&time, &date, &rtime);
-  uint32_t dt = RTC_ConvertFromStruct(&rtime);
+  RTC_Get(&dt);
+//  RTC_ConvertFromRtc(&time, &date, &dt);
+  uint32_t nDt = RTC_ConvertFromStruct(&dt);
 
   // zmerit napajeci napeti VDDA
   uint16_t nVDDA = Adc_MeasureRefInt();
 
   // namerit teplotu
-
-
   uint16_t tempADC = Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA);
   int16_t temp = Adc_CalcTemperature(tempADC);
 
@@ -117,7 +107,7 @@ void App_Measure(void)
 #endif
 
   uint8_t buff[RECORD_SIZE];
-  memcpy(buff, &dt, sizeof(dt));
+  memcpy(buff, &nDt, sizeof(nDt));
   buff[3] |= (tempADC >> 4) & 0xF0;
   buff[4] = (uint8_t)tempADC;
 
@@ -139,15 +129,15 @@ void App_Measure(void)
     }
   }
 
-  App_SupplyOff();
+  APP_SupplyOff();
 }
 
-uint32_t App_GetRecords()
+uint32_t APP_GetRecords()
 {
   return g_nSector * RECORDS_PER_SECTOR + g_nSectorPosition / RECORD_SIZE;
 }
 
-void App_FindFlashPosition()
+void APP_FindFlashPosition()
 {
   uint8_t buff[RECORD_SIZE];
 
@@ -194,7 +184,7 @@ void App_FindFlashPosition()
 
 }
 
-void App_PrintRecords()
+void APP_PrintRecords()
 {
   uint8_t buff[RECORD_SIZE];
   uint8_t text[30];
@@ -233,7 +223,7 @@ void App_PrintRecords()
   }
 }
 
-void App_SupplyOnAndWait()
+void APP_SupplyOnAndWait()
 {
   RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
 
@@ -251,7 +241,7 @@ void App_SupplyOnAndWait()
 //  SetMSI(msi_2Mhz);
 }
 
-void App_SupplyOff()
+void APP_SupplyOff()
 {
   ADC->CCR &= ~ADC_CCR_VREFEN;     // disable VREFINT
 
@@ -259,4 +249,25 @@ void App_SupplyOff()
 
   // tekl zde proud z PA7 (SPI MOSI), ktery se pres G25D10 objevil na PA2, na kterem vzniklo napeti 2,8V
   GPIOA->MODER = (GPIOA->MODER & (~GPIO_MODER_MODE7)) | GPIO_MODER_MODE7_0 | GPIO_MODER_MODE7_1; // analog mode
+}
+
+void APP_StopMode(void)
+{
+//  Adc_Disable();
+
+  RCC->APB1ENR |= RCC_APB1ENR_PWREN; // Enable PWR clock
+  PWR->CR |= PWR_CR_ULP;
+
+  SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
+  PWR->CR |= PWR_CR_CWUF;  // Clear Wakeup flag
+  PWR->CR |= PWR_CR_LPSDSR;
+  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk; // Set SLEEPDEEP bit of Cortex-M0 System Control Register
+
+  __asm volatile ("wfi");
+
+  SCB->SCR &= (uint32_t)~((uint32_t)SCB_SCR_SLEEPDEEP_Msk);
+  PWR->CR &= ~PWR_CR_LPSDSR;
+  SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
+
+//  Adc_Enable();
 }
