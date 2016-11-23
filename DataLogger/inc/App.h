@@ -18,11 +18,16 @@ typedef enum
   err_flash_error,
 } app_error_t;
 
+typedef struct
+{
+  uint32_t time;
+  int16_t  temperature;
+} __attribute__((packed)) app_record_t;
 
 void APP_Init(void);
 void APP_Measure(void);
 uint32_t APP_GetRecords();
-void APP_FindFlashPosition();
+uint32_t APP_FindFlashPosition();
 void APP_PrintRecords();
 void APP_SupplyOnAndWait();
 void APP_SupplyOff();

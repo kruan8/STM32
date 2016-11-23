@@ -12,7 +12,7 @@
 #include "usart.h"
 #include "rtc.h"
 #include "adc.h"
-#include "FlashG25D10B.h"
+#include "FlashG25.h"
 #include "clock.h"
 
 #define SUPPLY_PIN              (1 << 2)
@@ -21,16 +21,17 @@
 #define SUPPLY_ENABLE           (SUPPLY_GPIO_PORT->BSRR = SUPPLY_PIN)
 #define SUPPLY_DISABLE          (SUPPLY_GPIO_PORT->BRR = SUPPLY_PIN)
 
-#define RECORD_SIZE           5
-#define RECORDS_PER_SECTOR    (4096 / RECORD_SIZE)
-#define FULL_SECTOR           (RECORDS_PER_SECTOR * RECORD_SIZE)
+#define RECORD_SIZE             (sizeof(app_record_t))   // 5
+#define RECORDS_PER_SECTOR      (4096 / RECORD_SIZE)
+#define FULL_SECTOR             (RECORDS_PER_SECTOR * RECORD_SIZE)
 
-static const uint8_t EmptyRecord[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+//static const uint8_t EmptyRecord[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+static const app_record_t EmptyRecord = { 0xFFFFFFFF, 0xFFFF};
 
-uint32_t g_nSector;
-uint16_t g_nSectorPosition;
+static uint32_t g_nSector;
+static uint16_t g_nSectorPosition;
 
-app_error_t g_eError = err_ok;
+static app_error_t g_eError = err_ok;
 
 void APP_Init(void)
 {
@@ -49,20 +50,19 @@ void APP_Init(void)
   USART_Configure_GPIO();
   USART_Configure();
 
-  FlashG25D10_Init();
-  if (FlashG25D10_IsPresent())
+  uint32_t nFreeRecords = 0;
+  if (FlashG25_Init())
   {
-    APP_FindFlashPosition();
+    nFreeRecords = APP_FindFlashPosition();
   }
   else
   {
     g_eError = err_flash_error;
   }
 
-  RTC_SetUsartTimer(10000);
-
-  USART_PrintHeader(APP_GetRecords(), Adc_MeasureRefInt(), g_eError);
+  USART_PrintHeader(APP_GetRecords(), nFreeRecords, Adc_MeasureRefInt(), g_eError);
   USART_Putc('>');
+  RTC_SetUsartTimer(10000);     // waiting for usart input
 }
 
 void APP_Measure(void)
@@ -98,32 +98,32 @@ void APP_Measure(void)
   // namerit teplotu
   uint16_t tempADC = Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA);
   int16_t temp = Adc_CalcTemperature(tempADC);
+  int16_t tempInt = Adc_MeasureTemperatureInternal(Adc_MeasureRefInt());
 
 #ifdef DEBUG
-  uint8_t text[30];
-  snprintf((char*)text, sizeof(text), "VDDA:%d(mV)  TEMP:%d.%d", nVDDA, temp / 10, temp % 10);
+  uint8_t text[35];
+  snprintf((char*)text, sizeof(text), "VDDA:%d(mV)  TEMP:%d.%d / %d.%d", nVDDA, temp / 10, temp % 10,  tempInt / 10, tempInt % 10);
   USART_PrintLine(text);
   USART_WaitForTC();
 #endif
 
-  uint8_t buff[RECORD_SIZE];
-  memcpy(buff, &nDt, sizeof(nDt));
-  buff[3] |= (tempADC >> 4) & 0xF0;
-  buff[4] = (uint8_t)tempADC;
+  app_record_t record;
+  record.time = nDt;
+  record.temperature = temp;
 
   // ulozit do Flash
   if (g_nSectorPosition == 0)  // zacatek noveho sektoru, tak ho smazat
   {
-    FlashG25D10_SectorErase(g_nSector);
+    FlashG25_SectorErase(g_nSector);
   }
 
-  FlashG25D10_PageProgram(g_nSector + g_nSectorPosition, buff, sizeof(buff));
+  FlashG25_PageProgram(g_nSector + g_nSectorPosition, (uint8_t*)&record, sizeof(app_record_t));
   g_nSectorPosition += RECORD_SIZE;
   if (g_nSectorPosition >= FULL_SECTOR)
   {
     g_nSectorPosition = 0;
     g_nSector++;
-    if (g_nSector >= G25D10_SECTORS)
+    if (g_nSector >= FlashG25_GetSectors())
     {
       g_eError = err_full_memory;
     }
@@ -137,16 +137,17 @@ uint32_t APP_GetRecords()
   return g_nSector * RECORDS_PER_SECTOR + g_nSectorPosition / RECORD_SIZE;
 }
 
-void APP_FindFlashPosition()
+uint32_t APP_FindFlashPosition()
 {
   uint8_t buff[RECORD_SIZE];
 
   // find last used sector;
   bool bFullMemory = true;
-  for (g_nSector = 0; g_nSector < G25D10_SECTORS; g_nSector++)
+  uint32_t nSectors = FlashG25_GetSectors();
+  for (g_nSector = 0; g_nSector < nSectors; g_nSector++)
   {
-    FlashG25D10_ReadData(G25D10_SECTOR_SIZE * g_nSector, buff, RECORD_SIZE);
-    if (memcmp(buff, EmptyRecord, sizeof (EmptyRecord)) == 0)
+    FlashG25_ReadData(G25_SECTOR_SIZE * g_nSector, buff, RECORD_SIZE);
+    if (memcmp(buff, &EmptyRecord, sizeof (EmptyRecord)) == 0)
     {
       bFullMemory = false;
       break;
@@ -156,7 +157,7 @@ void APP_FindFlashPosition()
   if (bFullMemory)
   {
     g_eError = err_full_memory;
-    return;
+    return 0;
   }
 
   // find last record in the sector
@@ -166,8 +167,8 @@ void APP_FindFlashPosition()
     g_nSector--;
     while (g_nSectorPosition < FULL_SECTOR)
     {
-      FlashG25D10_ReadData(g_nSector * G25D10_SECTOR_SIZE + g_nSectorPosition, buff, RECORD_SIZE);
-      if (memcmp(buff, EmptyRecord, sizeof (EmptyRecord)) == 0)
+      FlashG25_ReadData(g_nSector * G25_SECTOR_SIZE + g_nSectorPosition, buff, RECORD_SIZE);
+      if (memcmp(buff, &EmptyRecord, sizeof (EmptyRecord)) == 0)
       {
         break;
       }
@@ -182,22 +183,25 @@ void APP_FindFlashPosition()
     }
   }
 
+  uint32_t nFreeRecords = ((nSectors - g_nSector) * G25_SECTOR_SIZE - g_nSectorPosition) / RECORD_SIZE;
+  return nFreeRecords;
 }
 
 void APP_PrintRecords()
 {
-  uint8_t buff[RECORD_SIZE];
+  app_record_t record;
   uint8_t text[30];
   uint32_t nRecords = 0;
 
   USART_PrintLine((uint8_t*)"Memory report:");
 
-  for (uint16_t sect = 0; sect < G25D10_SECTORS; sect++)
+  uint32_t nSectors = FlashG25_GetSectors();
+  for (uint16_t sect = 0; sect < nSectors; sect++)
   {
     for (uint16_t pos = 0; pos < FULL_SECTOR; pos += RECORD_SIZE)
     {
-      FlashG25D10_ReadData(g_nSector * G25D10_SECTOR_SIZE + pos, buff, RECORD_SIZE);
-      if (memcmp(buff, EmptyRecord, sizeof (EmptyRecord)) == 0)
+      FlashG25_ReadData(g_nSector * G25_SECTOR_SIZE + pos, (uint8_t*) &record, RECORD_SIZE);
+      if (memcmp((uint8_t*) &record, &EmptyRecord, sizeof (EmptyRecord)) == 0)
       {
         snprintf((char*)text, sizeof(text), "Number of records:%lu", nRecords);
         USART_PrintLine(text);
@@ -205,18 +209,12 @@ void APP_PrintRecords()
       }
 
       nRecords++;
-      uint16_t temp = (((uint16_t)buff[3] & 0xF0) << 4) | buff[4];
-
-      uint32_t dt;
-      buff[3] &= 0x0F;
-      memcpy(&dt, buff, sizeof(dt));
 
       rtc_record_time_t rtime;
-      RTC_ConvertToStruct(dt, &rtime);
+      RTC_ConvertToStruct(record.time, &rtime);
 
-      int16_t temperature = Adc_CalcTemperature(temp);
       snprintf((char*)text, sizeof(text), "%d.%d.%d %02d:%02d>%d.%d",
-          rtime.day, rtime.month, rtime.year, rtime.hour, rtime.min, temperature / 10, temperature % 10);
+          rtime.day, rtime.month, rtime.year, rtime.hour, rtime.min, record.temperature / 10, record.temperature % 10);
 
       USART_PrintLine(text);
     }
@@ -236,6 +234,8 @@ void APP_SupplyOnAndWait()
 
 //  SetMSI(msi_65kHz);
   ADC->CCR |= ADC_CCR_VREFEN;     // enable VREFINT
+  ADC->CCR |= ADC_CCR_TSEN;       // enable TEMP_INT
+
   uint32_t start = RTC_GetTicks();
   while ((RTC_GetTicks() - start) < 4);   // wait min 4ms
 //  SetMSI(msi_2Mhz);
@@ -244,6 +244,7 @@ void APP_SupplyOnAndWait()
 void APP_SupplyOff()
 {
   ADC->CCR &= ~ADC_CCR_VREFEN;     // disable VREFINT
+  ADC->CCR &= ~ADC_CCR_TSEN;       // disable TEMP_INT
 
   GPIOA->MODER = (GPIOA->MODER & (~GPIO_MODER_MODE2)) | GPIO_MODER_MODE2_0 | GPIO_MODER_MODE2_1; // analog mode
 
@@ -267,6 +268,7 @@ void APP_StopMode(void)
 
   SCB->SCR &= (uint32_t)~((uint32_t)SCB_SCR_SLEEPDEEP_Msk);
   PWR->CR &= ~PWR_CR_LPSDSR;
+  SysTick->VAL = 0;
   SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
 
 //  Adc_Enable();

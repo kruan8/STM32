@@ -15,7 +15,7 @@ void USART_Configure(void);
 void USART_Configure_GPIO(void);
 
 void USART_ProcessCommand();
-void USART_PrintHeader(uint32_t nRecords, uint32_t nBatVoltage, app_error_t eErr);
+void USART_PrintHeader(uint32_t nRecords, uint32_t nFreeRecords, uint32_t nBatVoltage, app_error_t eErr);
 void USART_PrintStatus();
 void USART_PrintHelp();
 void USART_SetDate();

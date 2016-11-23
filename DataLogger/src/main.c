@@ -11,21 +11,21 @@
 #include "usart.h"
 
 #include "adc.h"
-#include "FlashG25D10B.h"
+#include "FlashG25.h"
 #include "rtc.h"
 #include "App.h"
 
 /*
  * MCU bezi z MSI oscilatoru a pri freq 2,1 Mhz ma spotrebu cca 440 uA.
  * Po zmene rozsahu napajeni na Range3 (PWR->CR) se spotreba snizila na 362 uA.
- * Pred merenim spotreby je potreba prerusit napajeni, jinak STOP mod ma
- * spotrebu pres 100 uA (asi zustane napajeny DEBUG modul).
+ * Pred merenim spotreby nestaci reset, ale je potreba prerusit napajeni,
+ * jinak STOP mod ma spotrebu pres 100 uA (asi zustane napajeny DEBUG modul).
  *
  * Po uvedeni do STOP modu a odpojeni napajeni (PA2) od MCP9700 a G25D10,
  * se spotreba snizi na 1uA. Bylo potreba uvest do analogoveho vstupu i pin PA7
  * pres ktery tekl proud (asi PULLUP od SPI) a na PA2 se objevilo napeti 2,8 V.
  *
- * Merici cyklus trva cca 35 ms.
+ * Merici cyklus trva cca 35 ms (i s vystupem výpisu na seriový port).
  *
  */
 

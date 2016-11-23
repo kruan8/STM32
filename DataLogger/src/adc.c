@@ -12,9 +12,11 @@
 
 #define ADC_INPUT_TEMPERATURE           ADC_CHSELR_CHSEL0
 #define ADC_INPUT_REFINT                ADC_CHSELR_CHSEL17
+#define ADC_INPUT_TEMP_INT              ADC_CHSELR_CHSEL18
 
 #define ADC_SAMPLES                    10
 
+#define TEMP_VDD_CALIB ((uint16_t) (3000))
 #define TEMP30_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FF8007A))
 #define TEMP130_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FF8007E))
 #define VREFINT_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FF80078))
@@ -104,18 +106,25 @@ void Adc_Enable()
   }
 }
 
+int16_t Adc_MeasureTemperatureInternal(uint16_t nVDDA)
+{
+  ADC1->CHSELR = ADC_INPUT_TEMP_INT;
+  uint16_t nValue = Adc_Measure();
+
+  int32_t temperature;
+  temperature = ((nValue * nVDDA / TEMP_VDD_CALIB) - (int32_t) *TEMP30_CAL_ADDR );
+  temperature = temperature * (int32_t)(1300 - 300);
+  temperature = temperature / (int32_t)(*TEMP130_CAL_ADDR - *TEMP30_CAL_ADDR);
+  temperature = temperature + 300;
+
+  return (int16_t)temperature;
+}
+
+
 uint16_t Adc_MeasureTemperature(void)
 {
-  uint32_t nSumValue = 0;
   ADC1->CHSELR = ADC_INPUT_TEMPERATURE;       // channel
-  for (uint8_t i = 0; i < ADC_SAMPLES; i++)
-  {
-    ADC1->CR |= ADC_CR_ADSTART; /* Start the ADC conversion */
-    while (ADC1->CR & ADC_CR_ADSTART);
-    nSumValue += ADC1->DR;
-  }
-
-  return (uint16_t) (nSumValue / ADC_SAMPLES);
+  return Adc_Measure();
 }
 
 uint16_t Adc_CalcValueFromVDDA(uint16_t nValue, uint16_t nVDDA)
@@ -132,10 +141,21 @@ int16_t Adc_CalcTemperature(uint16_t nValue)
 
 uint16_t Adc_MeasureRefInt(void)
 {
-  uint32_t nSumValue = 0;
   ADC1->CHSELR = ADC_INPUT_REFINT;       // channel
 //  nSumValue = Adc_Oversampling();
 
+  uint16_t nAdcValue = Adc_Measure();
+  uint16_t nVrefIntCal = *VREFINT_CAL_ADDR;
+
+  // VDDA = 3 V x VREFINT_CAL / VREFINT_DATA
+  uint32_t nVDD = 3000L * nVrefIntCal / nAdcValue;
+
+  return (uint16_t) nVDD;
+}
+
+uint16_t Adc_Measure()
+{
+  uint32_t nSumValue = 0;
   for (uint8_t i = 0; i < ADC_SAMPLES; i++)
   {
     ADC1->CR |= ADC_CR_ADSTART; /* Start the ADC conversion */
@@ -143,13 +163,7 @@ uint16_t Adc_MeasureRefInt(void)
     nSumValue += ADC1->DR;
   }
 
-  nSumValue /= ADC_SAMPLES;
-  uint16_t nVrefIntCal = *VREFINT_CAL_ADDR;
-
-  // VDDA = 3 V x VREFINT_CAL / VREFINT_DATA
-  uint32_t nVDD = 3000L * nVrefIntCal / nSumValue;
-
-  return (uint16_t) nVDD;
+  return (uint16_t) (nSumValue / ADC_SAMPLES);
 }
 
 uint16_t Adc_Oversampling()

@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "rtc.h"
-#include "FlashG25D10B.h"
+#include "FlashG25.h"
 #include "adc.h"
 
 #ifdef DEBUG
@@ -22,16 +22,17 @@
 
 #define BUFFER_SIZE  128
 
-uint8_t g_BufferIn[BUFFER_SIZE];
-uint8_t g_BufferInPos;
-bool    g_bCommandReady;
-uint16_t g_nWakeUpInterval = WAKEUP_INTERVAL_S;
+static uint8_t g_BufferIn[BUFFER_SIZE];
+static uint8_t g_BufferInPos;
+static bool    g_bCommandReady;
+static uint16_t g_nWakeUpInterval = WAKEUP_INTERVAL_S;
 
-uint32_t g_nRecords;
-uint32_t g_nBatVoltage;
+static uint32_t g_nRecords;
+static uint32_t g_nFreeRecords;
+static uint32_t g_nBatVoltage;
 
-const uint8_t T_Version[] = "---- DATA LOGGER v0.1 ----";
-const uint8_t T_NewLine[] = "\r\n";
+static const uint8_t T_Version[] = "---- DATA LOGGER v0.1 ----";
+static const uint8_t T_NewLine[] = "\r\n";
 
 
 void USART_Configure_GPIO(void)
@@ -122,9 +123,10 @@ void USART_ProcessCommand()
   USART_Putc('>');
 }
 
-void USART_PrintHeader(uint32_t nRecords, uint32_t nBatVoltage, app_error_t eErr)
+void USART_PrintHeader(uint32_t nRecords, uint32_t nFreeRecords, uint32_t nBatVoltage, app_error_t eErr)
 {
   g_nRecords = nRecords;
+  g_nFreeRecords = nFreeRecords;
   g_nBatVoltage = nBatVoltage;
 
   USART_PrintNewLine();
@@ -158,11 +160,13 @@ void USART_PrintStatus()
   snprintf((char*)text, sizeof (text), "Battery:%d(mV)", nVDDA);
   USART_PrintLine(text);
   int16_t temp = Adc_CalcTemperature(Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA));
-  snprintf((char*)text, sizeof (text), "Temperature:%d.%d(C)", temp / 10, temp % 10);
+  snprintf((char*)text, sizeof (text), "Temperature:%d,%d(C)", temp / 10, temp % 10);
   USART_PrintLine(text);
   snprintf((char*)text, sizeof (text), "Interval:%d(min)", g_nWakeUpInterval / 60);
   USART_PrintLine(text);
   snprintf((char*)text, sizeof (text), "Number of records:%lu", g_nRecords);
+  USART_PrintLine(text);
+  snprintf((char*)text, sizeof (text), "Free memory:%lu records", g_nFreeRecords);
   USART_PrintLine(text);
 }
 
@@ -185,7 +189,7 @@ void USART_EraseMemory()
     // vymazat pamet
     for (uint8_t i = 0; i < 32; i++)
     {
-      FlashG25D10_SectorErase(i);
+      FlashG25_SectorErase(i);
       USART_Putc('.');
     }
 
@@ -307,7 +311,7 @@ void USART2_IRQHandler(void)
 
   if (USART2->ISR & USART_ISR_RXNE)
   {
-    RTC_SetUsartTimer(60000);
+    RTC_SetUsartTimer(60000);       // timeout for command line
     g_BufferIn[g_BufferInPos] = USART2->RDR;
 
     // End of line!
