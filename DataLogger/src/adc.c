@@ -113,7 +113,7 @@ int16_t Adc_MeasureTemperatureInternal(uint16_t nVDDA)
 
   int32_t temperature;
   temperature = ((nValue * nVDDA / TEMP_VDD_CALIB) - (int32_t) *TEMP30_CAL_ADDR );
-  temperature = temperature * (int32_t)(1300 - 300);
+  temperature = temperature * (int32_t)(130 - 30) * 10;
   temperature = temperature / (int32_t)(*TEMP130_CAL_ADDR - *TEMP30_CAL_ADDR);
   temperature = temperature + 300;
 

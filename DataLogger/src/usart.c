@@ -14,6 +14,7 @@
 #include "FlashG25.h"
 #include "adc.h"
 
+
 #ifdef DEBUG
 #define WAKEUP_INTERVAL_S    10  // 10 seconds
 #elif
@@ -22,10 +23,11 @@
 
 #define BUFFER_SIZE  128
 
+
 static uint8_t g_BufferIn[BUFFER_SIZE];
 static uint8_t g_BufferInPos;
 static bool    g_bCommandReady;
-static uint16_t g_nWakeUpInterval = WAKEUP_INTERVAL_S;
+static uint16_t g_nWakeUpInterval_s = WAKEUP_INTERVAL_S;
 
 static uint32_t g_nRecords;
 static uint32_t g_nFreeRecords;
@@ -112,6 +114,9 @@ void USART_ProcessCommand()
     case 'X':
       USART_EraseMemory();
       break;
+    case 'C':
+      USART_CalTemp();
+      break;
     default:
       USART_PrintLine((uint8_t*)"???");
       break;
@@ -162,11 +167,12 @@ void USART_PrintStatus()
   int16_t temp = Adc_CalcTemperature(Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA));
   snprintf((char*)text, sizeof (text), "Temperature:%d,%d(C)", temp / 10, temp % 10);
   USART_PrintLine(text);
-  snprintf((char*)text, sizeof (text), "Interval:%d(min)", g_nWakeUpInterval / 60);
+  snprintf((char*)text, sizeof (text), "Interval:%d(min)", g_nWakeUpInterval_s / 60);
   USART_PrintLine(text);
   snprintf((char*)text, sizeof (text), "Number of records:%lu", g_nRecords);
   USART_PrintLine(text);
-  snprintf((char*)text, sizeof (text), "Free memory:%lu records", g_nFreeRecords);
+  uint32_t nDays = g_nFreeRecords / (86400 / g_nWakeUpInterval_s);
+  snprintf((char*)text, sizeof (text), "Free memory:%lu records (%lu days)", g_nFreeRecords, nDays);
   USART_PrintLine(text);
 }
 
@@ -251,18 +257,18 @@ void USART_SetWakeUpInterval()
     uint16_t nInterval = atoi((char*)&g_BufferIn[1]);
     if (nInterval)
     {
-      g_nWakeUpInterval = nInterval * 60;
+      g_nWakeUpInterval_s = nInterval * 60;
     }
   }
 
   uint8_t text[20];
-  snprintf((char*)text, sizeof(text), "Interval=%d min", g_nWakeUpInterval / 60);
+  snprintf((char*)text, sizeof(text), "Interval=%d min", g_nWakeUpInterval_s / 60);
   USART_PrintLine(text);
 }
 
 uint16_t USART_GetWakeUpInterval()
 {
-  return g_nWakeUpInterval;
+  return g_nWakeUpInterval_s;
 }
 
 void USART_PrintDateTime()
@@ -270,6 +276,19 @@ void USART_PrintDateTime()
   uint8_t text[20];
   RTC_PrintDT(text, sizeof(text));
   USART_PrintLine(text);
+}
+
+void USART_CalTemp()
+{
+  if (!strncmp((char*)g_BufferIn, "CAL", 3))
+  {
+    int32_t temp = atoi((char*)&g_BufferIn[3]);
+    if (temp)
+    {
+      uint16_t nAdcValue = Adc_MeasureTemperature();
+      APP_SaveCalTemp(temp, nAdcValue);
+    }
+  }
 }
 
 void USART_Putc(uint8_t ch)

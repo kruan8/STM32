@@ -14,6 +14,7 @@
 #include "adc.h"
 #include "FlashG25.h"
 #include "clock.h"
+#include "Eeprom.h"
 
 #define SUPPLY_PIN              (1 << 2)
 #define SUPPLY_GPIO_PORT        GPIOA
@@ -30,6 +31,8 @@ static const app_record_t EmptyRecord = { 0xFFFFFFFF, 0xFFFF};
 
 static uint32_t g_nSector;
 static uint16_t g_nSectorPosition;
+static int16_t  g_nCalTemp;
+static uint16_t  g_nCalTempAdc;
 
 static app_error_t g_eError = err_ok;
 
@@ -44,6 +47,9 @@ void APP_Init(void)
 
   Adc_Init();
   RTC_Init();
+
+  g_nCalTemp = Eeprom_ReadUint32(EEPROM_TEMP_C);
+  g_nCalTempAdc = Eeprom_ReadUint32(EEPROM_TEMP_ADC);
 
   APP_SupplyOnAndWait();  // set SUPPLY pin for output
 
@@ -254,8 +260,7 @@ void APP_SupplyOff()
 
 void APP_StopMode(void)
 {
-//  Adc_Disable();
-
+  // Adc_Disable();
   RCC->APB1ENR |= RCC_APB1ENR_PWREN; // Enable PWR clock
   PWR->CR |= PWR_CR_ULP;
 
@@ -272,4 +277,13 @@ void APP_StopMode(void)
   SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
 
 //  Adc_Enable();
+}
+
+void APP_SaveCalTemp(int16_t nTemp, uint16_t nAdcValue)
+{
+  // ulozit do EEPROM
+  Eeprom_UnlockPELOCK();
+  Eeprom_WriteUint32(EEPROM_TEMP_C, nTemp);
+  Eeprom_WriteUint32(EEPROM_TEMP_ADC, nAdcValue);
+  Eeprom_LockNVM();
 }

@@ -24,6 +24,7 @@ void USART_EraseMemory();
 void USART_SetWakeUpInterval();
 uint16_t USART_GetWakeUpInterval();
 void USART_PrintDateTime();
+void USART_CalTemp();
 
 void USART_Putc(uint8_t ch);
 void USART_Print(const uint8_t *text);
