@@ -3,7 +3,9 @@
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
 		<cconfiguration id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.1048623883">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.1048623883" moduleId="org.eclipse.cdt.core.settings" name="Debug">
-				<externalSettings/>
+				<externalSettings>
+					<externalSetting/>
+				</externalSettings>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -43,12 +45,14 @@
 									<listOptionValue builtIn="false" value="DEBUG"/>
 									<listOptionValue builtIn="false" value="STM32L031F6Px"/>
 								</option>
-								<option id="gnu.c.compiler.option.dialect.std.1138060683" superClass="gnu.c.compiler.option.dialect.std" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
-								<option id="gnu.c.compiler.option.dialect.flags.1880764209" superClass="gnu.c.compiler.option.dialect.flags" value=" -std=gnu99 " valueType="string"/>
+								<option id="gnu.c.compiler.option.dialect.std.1138060683" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.dialect.flags.1880764209" name="Other dialect flags" superClass="gnu.c.compiler.option.dialect.flags" useByScannerDiscovery="true" value=" -std=gnu99 " valueType="string"/>
 								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.457935348"/>
 								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.s.1615607831"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1751046836" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.1452158515" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input"/>
+								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.1452158515"/>
+								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.286916459" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c"/>
+								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.s.43907285" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.s"/>
 							</tool>
 							<tool id="fr.ac6.managedbuild.tool.gnu.cross.cpp.compiler.1962126162" name="MCU G++ Compiler" superClass="fr.ac6.managedbuild.tool.gnu.cross.cpp.compiler">
 								<option id="fr.ac6.managedbuild.gnu.cpp.compiler.option.optimization.level.2029400125" name="Optimization Level" superClass="fr.ac6.managedbuild.gnu.cpp.compiler.option.optimization.level" useByScannerDiscovery="false"/>
@@ -121,7 +125,9 @@
 								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.1895336071"/>
 								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.s.143605027"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.390832016" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.829340357" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input"/>
+								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.829340357"/>
+								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.1598147918" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c"/>
+								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.s.956806426" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.s"/>
 							</tool>
 							<tool id="fr.ac6.managedbuild.tool.gnu.cross.cpp.compiler.1719798674" name="MCU G++ Compiler" superClass="fr.ac6.managedbuild.tool.gnu.cross.cpp.compiler">
 								<option id="fr.ac6.managedbuild.gnu.cpp.compiler.option.optimization.level.2051745713" name="Optimization Level" superClass="fr.ac6.managedbuild.gnu.cpp.compiler.option.optimization.level" useByScannerDiscovery="false" value="fr.ac6.managedbuild.gnu.cpp.optimization.level.most" valueType="enumerated"/>
@@ -168,10 +174,13 @@
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		<scannerConfigBuildInfo instanceId="fr.ac6.managedbuild.config.gnu.cross.exe.release.236493060;fr.ac6.managedbuild.config.gnu.cross.exe.release.236493060.;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.635510295;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.1895336071">
-			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="fr.ac6.managedbuild.config.gnu.cross.exe.debug.1048623883;fr.ac6.managedbuild.config.gnu.cross.exe.debug.1048623883.;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.129889708;cdt.managedbuild.tool.gnu.c.compiler.input.1751046836">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="fr.ac6.managedbuild.config.gnu.cross.exe.debug.1048623883;fr.ac6.managedbuild.config.gnu.cross.exe.debug.1048623883.;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.129889708;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.457935348">
+		<scannerConfigBuildInfo instanceId="fr.ac6.managedbuild.config.gnu.cross.exe.debug.1048623883;fr.ac6.managedbuild.config.gnu.cross.exe.debug.1048623883.;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.129889708;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.286916459">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="fr.ac6.managedbuild.config.gnu.cross.exe.release.236493060;fr.ac6.managedbuild.config.gnu.cross.exe.release.236493060.;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.635510295;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.1895336071">
 			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>

@@ -108,13 +108,13 @@ void Spirit_WriteCommand(uint8_t nCommand, SpiritState state)
 
 void Spirit_InitRegs()
 {
-  Spirit_WriteReg(159, 160);
+  Spirit_WriteReg(159, 160);      // 0x9F
   Spirit_WriteCommand(COMMAND_STANDBY, MC_STATE_STANDBY);
 
-  Spirit_WriteReg(180, 33);
+  Spirit_WriteReg(180, 33);       // 0xB4
   Spirit_WriteCommand(COMMAND_READY, MC_STATE_READY);
 
-  Spirit_WriteReg(163, 53);
+  Spirit_WriteReg(163, 53);       // 0xA3
   Spirit_WriteReg(7, 54);
 
   Spirit_WriteReg(1, 192);
