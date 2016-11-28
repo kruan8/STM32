@@ -165,7 +165,7 @@ void App_Exec(void)
       if (memcmp(RxBuffer, aCheckBroadcast, sizeof (aCheckBroadcast)) == 0)
       {
         g_eState = APP_STATE_START_RX;
-        Gpio_LedBlink(100);
+        Gpio_LedBlink(50);
       }
       else if (memcmp(RxBuffer, aFlashBroadcast, sizeof (aFlashBroadcast)) == 0)
       {
