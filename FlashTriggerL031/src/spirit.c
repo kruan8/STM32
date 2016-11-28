@@ -108,32 +108,39 @@ void Spirit_WriteCommand(uint8_t nCommand, SpiritState state)
 
 void Spirit_InitRegs()
 {
-  Spirit_WriteReg(159, 160);      // 0x9F
+  Spirit_WriteReg(159, 160);      // 0x9F  split time=3.47 ns
   Spirit_WriteCommand(COMMAND_STANDBY, MC_STATE_STANDBY);
 
-  Spirit_WriteReg(180, 33);       // 0xB4
+  Spirit_WriteReg(180, 33);       // 0xB4 (XO_RCO_TEST)
   Spirit_WriteCommand(COMMAND_READY, MC_STATE_READY);
 
-  Spirit_WriteReg(163, 53);       // 0xA3
-  Spirit_WriteReg(7, 54);
+  Spirit_WriteReg(163, 53);       // 0xA3 (DEM_CONFIG)  enable initialization
+  Spirit_WriteReg(7, 54);         // (IF_OFFSET_ANA)  Intermediate frequency setting for the analog RF synthesizer.
 
-  Spirit_WriteReg(1, 192);
-  Spirit_WriteReg(108, 0);
-  Spirit_WriteReg(12, 14);
-  Spirit_WriteReg(13, 172);
-  Spirit_WriteReg(14, 0);
-  Spirit_WriteReg(15, 0);
+  Spirit_WriteReg(1, 192);        // ANA_FUNC_CONF
 
-  Spirit_WriteReg(26, 46);
-  Spirit_WriteReg(27, 12);
-  Spirit_WriteReg(28, 98);
-  Spirit_WriteReg(29, 2);
+  // Channel number. This value is  multiplied by the channel
+  // spacing and added to the synthesizer base frequency to
+  // generate the actual RF carrier  frequency.
+  Spirit_WriteReg(108, 0);        // 0x6C (CHNUM)
 
-  Spirit_WriteReg(30, 200);
-  Spirit_WriteReg(153, 128);
-  Spirit_WriteReg(154, 227);
-  Spirit_WriteReg(158, 91);
+  Spirit_WriteReg(12, 14);        // 0x0C (CHSPACE)
+  Spirit_WriteReg(13, 172);       // 0x0D (IF_OFFSET_DIG) Intermediate frequency setting for the digital shift-to-baseband
+  Spirit_WriteReg(14, 0);         // 0x0E (FC_OFFSET[1])  Carrier offset in steps of fXO/218
+  Spirit_WriteReg(15, 0);         // 0x0F (FC_OFFSET[0])
 
+  // Radio configuration
+  Spirit_WriteReg(26, 46);        // 0x1A (MOD1) The mantissa value of the data rate equation
+  Spirit_WriteReg(27, 12);        // 0x1B (MOD0)
+  Spirit_WriteReg(28, 98);        // 0x1C (FDEV0)
+  Spirit_WriteReg(29, 2);         // 0x1D (CHFLT)
+
+  Spirit_WriteReg(30, 200);       // 0x1E (AFC2)
+  Spirit_WriteReg(153, 128);      // 0x99
+  Spirit_WriteReg(154, 227);      // 0x9A
+  Spirit_WriteReg(158, 91);       // 0x9E (SYNTH_CONFIG[1])  fREF = fXO frequency
+
+  // SYNT0 - SYNT3
 #ifdef USE_SPIRIT1_868MHz  // for 848 MHz
   Spirit_WriteReg(8, 6);
   Spirit_WriteReg(9, 130);
@@ -148,7 +155,7 @@ void Spirit_InitRegs()
   Spirit_WriteReg(11, 201);
 #endif
 
-  Spirit_WriteReg(158, 219);
+  Spirit_WriteReg(158, 219);       // 0x9E (SYNTH_CONFIG[1]) fREF = fXO frequency / 2
   Spirit_WriteReg(158, 219);
 
 #ifdef USE_SPIRIT1_868MHz  // for 848 MHz
@@ -165,8 +172,8 @@ void Spirit_InitRegs()
   Spirit_WriteReg(11, 145);
 #endif
 
-  Spirit_WriteReg(161, 25);
-  Spirit_WriteReg(80, 2);
+  Spirit_WriteReg(VCO_CONFIG_BASE, 25);  // Set the VCO current
+  Spirit_WriteReg(PROTOCOL2_BASE, PROTOCOL2_VCO_CALIBRATION_MASK); // enable the automatic VCO calibration
 
   Spirit_WriteCommand(COMMAND_LOCKTX, MC_STATE_LOCK);
 
@@ -176,9 +183,9 @@ void Spirit_InitRegs()
 
   Spirit_WriteCommand(COMMAND_READY, MC_STATE_READY);
 
-  Spirit_WriteReg(80, 0);
-  Spirit_WriteReg(158, 91);
-  Spirit_WriteReg(158, 91);
+  Spirit_WriteReg(PROTOCOL2_BASE, 0); // disable the automatic VCO calibration
+  Spirit_WriteReg(SYNTH_CONFIG1_BASE, 91);       // fREF = fXO frequency
+  Spirit_WriteReg(SYNTH_CONFIG1_BASE, 91);       // fREF = fXO frequency
 
 #ifdef USE_SPIRIT1_868MHz  // for 848 MHz
   Spirit_WriteReg(8, 6);
@@ -194,11 +201,11 @@ void Spirit_InitRegs()
   Spirit_WriteReg(11, 201);
 #endif
 
-  Spirit_WriteReg(161, 17);
+  Spirit_WriteReg(161, 17);    // 0xA1  Set the VCO current
 
 #ifdef USE_SPIRIT1_868MHz  // for 848 MHz
-  Spirit_WriteReg(110, 67);  // nebo 66
-  Spirit_WriteReg(111, 67);  // nebo 66
+  Spirit_WriteReg(110, 67);  // nebo 66       // 0x6E Word value for the VCO to be used in TX mode
+  Spirit_WriteReg(111, 67);  // nebo 66       // 0x6F Word value for the VCO to be used in RX mode
 #endif
 
 #ifdef USE_SPIRIT1_915MHz  // for 915 MHz
@@ -209,36 +216,52 @@ void Spirit_InitRegs()
 
 void Spirit_SetPowerRegs(void)
 {
-    Spirit_WriteReg(16, 1);
-    Spirit_WriteReg(24, 7);
+  Spirit_WriteReg(PA_POWER8_BASE, 1);  // Output power level for 8th slot (+12 dBm)
+
+  // Final level for power ramping or selected output power index
+  Spirit_WriteReg(PA_POWER0_BASE, PA_POWER0_PA_LEVEL_MAX_INDEX_7);
 }
 
 void Spirit_ProtocolInitRegs(void)
 {
   // PacketConfig
-  Spirit_WriteReg(81, 1);
-  Spirit_WriteReg(79, 64);
 
-  Spirit_WriteReg(48, 8);
-  Spirit_WriteReg(49, 6);
-  Spirit_WriteReg(50, 31);
-  Spirit_WriteReg(51, 48);
+  uint8_t nValue;
 
-  Spirit_WriteReg(79, 65);
+  // automatic packet filtering mode enabled
+  // vypnout vsechny filtry
+  // !! kdyz byly filtry povoleny a v registru PCKT_FLT_OPTIONS_BASE vsechny zakazany, tak stejne se pakety zahazovaly !!
+  Spirit_WriteReg(PROTOCOL1_BASE, 0 /*PROTOCOL1_AUTO_PCKT_FLT_MASK*/);
 
-  Spirit_WriteReg(54, 136);
-  Spirit_WriteReg(55, 136);
-  Spirit_WriteReg(56, 136);
-  Spirit_WriteReg(57, 136);
+  // filter option
+//  Spirit_WriteReg(PCKT_FLT_OPTIONS_BASE, PCKT_FLT_OPTIONS_RX_TIMEOUT_AND_OR_SELECT);
+
+  Spirit_WriteReg(PCKTCTRL4_BASE, 8);   // 0x30  Length of address field in bytes: Basic, CONTROL_LEN=0
+  Spirit_WriteReg(PCKTCTRL3_BASE, 6);   // 0x31  LEN_WID=6
+  Spirit_WriteReg(PCKTCTRL2_BASE, 31);
+  Spirit_WriteReg(PCKTCTRL1_BASE, 48);
+
+  // filter option
+  // vyhodime filtrovani od kvality signalu
+//  SPIspirit_ReadRegisters(PCKT_FLT_OPTIONS_BASE, 1, &nValue);
+  Spirit_WriteReg(PCKT_FLT_OPTIONS_BASE, 0/* PCKT_FLT_OPTIONS_RX_TIMEOUT_AND_OR_SELECT | PCKT_FLT_OPTIONS_CRC_CHECK_MASK*/);
+//  SPIspirit_ReadRegisters(PROTOCOL2_BASE, 1, &nValue);
+
+
+  // SYNC4-SYNC1 word (default)
+  Spirit_WriteReg(SYNC4_BASE, 0x88);
+  Spirit_WriteReg(SYNC3_BASE, 0x88);
+  Spirit_WriteReg(SYNC2_BASE, 0x88);
+  Spirit_WriteReg(SYNC1_BASE, 0x88);
 }
 
 void Spirit_EnableSQIRegs(void)
 {
-  Spirit_WriteReg(58, 2);
+  Spirit_WriteReg(58, 2);       // 0x3A
   Spirit_WriteReg(58, 2);
 }
 
 void Spirit_SetRssiTHRegs(void)
 {
-  Spirit_WriteReg(34, 20);
+  Spirit_WriteReg(34, 20);      // 0x22
 }
