@@ -53,8 +53,7 @@ void APP_Init(void)
 
   APP_SupplyOnAndWait();  // set SUPPLY pin for output
 
-  USART_Configure_GPIO();
-  USART_Configure();
+  USART_Init();
 
   uint32_t nFreeRecords = 0;
   if (FlashG25_Init())

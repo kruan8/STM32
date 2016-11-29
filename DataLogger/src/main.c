@@ -43,6 +43,11 @@ int main(void)
 
   USART_PrintLine((uint8_t*)"Exit to measure mode");
   USART_WaitForTC();
+
+#ifndef DEBUG
+  USART_DeInit();
+#endif
+
   RTC_SetWakeUp(USART_GetWakeUpInterval());
   while (1)
   {

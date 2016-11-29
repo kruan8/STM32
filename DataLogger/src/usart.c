@@ -36,8 +36,7 @@ static uint32_t g_nBatVoltage;
 static const uint8_t T_Version[] = "---- DATA LOGGER v0.1 ----";
 static const uint8_t T_NewLine[] = "\r\n";
 
-
-void USART_Configure_GPIO(void)
+void USART_Init(void)
 {
   /* Enable the peripheral clock of GPIOA */
   RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
@@ -46,20 +45,17 @@ void USART_Configure_GPIO(void)
   /* (1) Select AF mode (10) on PA9 and PA10 */
   /* (2) AF4 for USART2 signals */
   GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE9|GPIO_MODER_MODE10))\
-                 | (GPIO_MODER_MODE9_1 | GPIO_MODER_MODE10_1); /* (1) */
+                | (GPIO_MODER_MODE9_1 | GPIO_MODER_MODE10_1); /* (1) */
   GPIOA->AFR[1] = (GPIOA->AFR[1] &~ (0x00000FF0))\
-                  | (4 << (1 * 4)) | (4 << (2 * 4)); /* (2) */
-}
+                 | (4 << (1 * 4)) | (4 << (2 * 4)); /* (2) */
 
-void USART_Configure(void)
-{
   /* Enable the peripheral clock USART2 */
   RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
 
   /* Configure USART2 */
   /* (1) oversampling by 16, 9600 baud */
   /* (2) 8 data bit, 1 start bit, 1 stop bit, no parity */
-//  USART2->BRR = 160000 / 96; /* (1) */
+  //  USART2->BRR = 160000 / 96; /* (1) */
   USART2->BRR = 218;
   USART2->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UE; /* (2) */
 
@@ -71,17 +67,25 @@ void USART_Configure(void)
 
   g_bCommandReady = false;
 
-  USART2->CR1 |= USART_CR1_RXNEIE;      // ebale RX INT
+  USART2->CR1 |= USART_CR1_RXNEIE;      // enable RX INT
 
-//  USART2->ICR = USART_ICR_TCCF;/* clear TC flag */
-//  USART2->CR1 |= USART_CR1_TCIE;/* enable TC interrupt */
+  //  USART2->ICR = USART_ICR_TCCF;/* clear TC flag */
+  //  USART2->CR1 |= USART_CR1_TCIE;/* enable TC interrupt */
 
   NVIC_SetPriority(USART2_IRQn, 1);
   NVIC_EnableIRQ(USART2_IRQn);
 }
 
+void USART_DeInit(void)
+{
+  USART2->CR1 = 0;      // enable RX INT
+  NVIC_DisableIRQ(USART2_IRQn);
+  RCC->APB1ENR &= ~RCC_APB1ENR_USART2EN;
 
-// https://gist.github.com/adnbr/2629767
+  // Set GPIOs to analog mode
+  GPIOA->MODER |= (GPIO_MODER_MODE9_1 | GPIO_MODER_MODE9_0 | GPIO_MODER_MODE10_1 | GPIO_MODER_MODE10_0);
+}
+
 void USART_ProcessCommand()
 {
   if (!g_bCommandReady)
