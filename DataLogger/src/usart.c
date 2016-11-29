@@ -14,7 +14,6 @@
 #include "FlashG25.h"
 #include "adc.h"
 
-
 #ifdef DEBUG
 #define WAKEUP_INTERVAL_S    10  // 10 seconds
 #elif
@@ -22,7 +21,6 @@
 #endif
 
 #define BUFFER_SIZE  128
-
 
 static uint8_t g_BufferIn[BUFFER_SIZE];
 static uint8_t g_BufferInPos;
@@ -140,10 +138,11 @@ void USART_PrintHeader(uint32_t nRecords, uint32_t nFreeRecords, uint32_t nBatVo
 
   USART_PrintNewLine();
   USART_PrintLine(T_Version);
+
   USART_PrintStatus();
   USART_PrintNewLine();
-  USART_PrintHelp();
-  USART_PrintNewLine();
+//  USART_PrintHelp();
+//  USART_PrintNewLine();
 
   switch (eErr)
   {
@@ -286,7 +285,17 @@ void USART_CalTemp()
 {
   if (!strncmp((char*)g_BufferIn, "CAL", 3))
   {
-    int32_t temp = atoi((char*)&g_BufferIn[3]);
+    int16_t temp = 0;
+    if (atoi((char*)&g_BufferIn[3]))  // pokud je první hodnota platné èíslo
+    {
+      const char s[2] = ".";
+      char *pos = strtok((char*)&g_BufferIn[3], s); // find first occure
+      temp = atoi(pos) * 10;
+
+      pos = strtok(NULL, s); // find first occure
+      temp += atoi(pos);
+    }
+
     if (temp)
     {
       uint16_t nAdcValue = Adc_MeasureTemperature();

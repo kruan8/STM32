@@ -12,23 +12,23 @@
 
 #define RTC_TR_RESERVED_MASK    ((uint32_t)0x007F7F7F)
 #define RTC_DR_RESERVED_MASK    ((uint32_t)0x00FFFF3F)
-#define RTC_BCD2BIN(x)          ((((x) >> 4) & 0x0F) * 10 + ((x) & 0x0F))
 
-#define RTC_EPOCH_YR 2000            /* EPOCH = Jan 1 2000 00:00:00 */
-#define RTC_SECS_DAY (24L * 60L * 60L)
-#define RTC_MINUTES_DAY (24L * 60L)
+/* Internal RTC defines */
+#define RTC_LEAP_YEAR(year)             ((((year) % 4 == 0) && ((year) % 100 != 0)) || ((year) % 400 == 0))
+#define RTC_DAYS_IN_YEAR(x)             RTC_LEAP_YEAR(x) ? 366 : 365
+#define RTC_OFFSET_YEAR                 1970
+#define RTC_SECONDS_PER_DAY             86400
+#define RTC_SECONDS_PER_HOUR            3600
+#define RTC_SECONDS_PER_MINUTE          60
+#define RTC_BCD2BIN(x)                  ((((x) >> 4) & 0x0F) * 10 + ((x) & 0x0F))
+#define RTC_CHAR2NUM(x)                 ((x) - '0')
+#define RTC_CHARISNUM(x)                ((x) >= '0' && (x) <= '9')
 
-#define LEAPYEAR(year)  (!((year) % 4) && (((year) % 100) || !((year) % 400)))  // zjisteni prestupneho roku
-#define YEARSIZE(year)  (LEAPYEAR(year) ? 366 : 365)              // pocet dnu roku (prestupny/neprestupny)
-
-// tabulka pro prevod z timestamp
-static const uint8_t ytab[2][12] = {{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-                            {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
-
-// tabulky pro prevod do timestamp
-static const uint16_t mtha[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
-static const uint16_t mthb[12] = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335};
-
+/* Days in a month */
+const uint8_t TM_RTC_Months[2][12] = {
+  {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}, /* Not leap year */
+  {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}  /* Leap year */
+};
 
 static volatile uint32_t g_nTicks = 0;
 static volatile uint32_t g_nUsartTimer;
@@ -154,47 +154,93 @@ void RTC_SetUsartTimer(uint32_t nInterval_ms)
   g_nUsartTimer = nInterval_ms;
 }
 
-void RTC_ConvertToStruct (uint32_t time, rtc_record_time_t* stime)
+int32_t RTC_GetUnixTimeStamp(rtc_record_time_t* data)
 {
-  uint32_t dayclock, dayno;
-  stime->year = RTC_EPOCH_YR;
-
-  dayclock = time % RTC_MINUTES_DAY;
-  dayno = time / RTC_MINUTES_DAY;
-
-  stime->sec = 0;  // dayclock % 60;
-  stime->min = dayclock % 60;
-  stime->hour = dayclock / 60;
-
-  while (dayno >= YEARSIZE(stime->year))
-  {
-    dayno -= YEARSIZE(stime->year);
-    stime->year++;
+  uint32_t days = 0, seconds = 0;
+  uint16_t i;
+  uint16_t year = (uint16_t) (data->year + 2000);
+  /* Year is below offset year */
+  if (year < RTC_OFFSET_YEAR) {
+    return 0;
   }
-
-  stime->month = 0;
-  while (dayno >= (ytab[LEAPYEAR(stime->year)][stime->month]))
-  {
-    dayno -= ytab[LEAPYEAR(stime->year)][stime->month];
-    stime->month++;
+  /* Days in back years */
+  for (i = RTC_OFFSET_YEAR; i < year; i++) {
+    days += RTC_DAYS_IN_YEAR(i);
   }
+  /* Days in current year */
+  for (i = 1; i < data->month; i++) {
+    days += TM_RTC_Months[RTC_LEAP_YEAR(year)][i - 1];
+  }
+  /* Day starts with 1 */
+  days += data->day - 1;
+  seconds = days * RTC_SECONDS_PER_DAY;
+  seconds += data->hour * RTC_SECONDS_PER_HOUR;
+  seconds += data->min * RTC_SECONDS_PER_MINUTE;
+  seconds += data->sec;
 
-  stime->month++;
-  stime->day = dayno + 1;
-  stime->year -= 2000;
+  /* seconds = days * 86400; */
+  return seconds;
 }
 
-uint32_t RTC_ConvertFromStruct(rtc_record_time_t* stime)
+void RTC_GetDateTimeFromUnix(rtc_record_time_t* data, uint32_t unix)
 {
-  uint32_t time;
-  uint8_t year1 = stime->year + 2000 - RTC_EPOCH_YR;
-  uint16_t year = (uint16_t)year1 + RTC_EPOCH_YR;
-  uint32_t day_min = (uint32_t)stime->hour * 60 + (uint16_t)stime->min;
-  time = (((!(year % 4)) && (year % 100)) || (!(year % 400)))?
-        (((((unsigned long int) year1 + 2) / 4)) + year1 * 365 + mthb[stime->month - 1] + (stime->day - 1)) * 1440 + day_min:  // prestupny rok
-        (((((unsigned long int) year1 + 2) / 4)) + year1 * 365 + mtha[stime->month - 1] + (stime->day - 1)) * 1440 + day_min;
+  uint16_t year;
 
-  return time;
+  /* Get seconds from unix */
+  data->sec = unix % 60;
+  /* Go to minutes */
+  unix /= 60;
+  /* Get minutes */
+  data->min = unix % 60;
+  /* Go to hours */
+  unix /= 60;
+  /* Get hours */
+  data->hour = unix % 24;
+  /* Go to days */
+  unix /= 24;
+
+  /* Get week day */
+  /* Monday is day one */
+  data->day = (unix + 3) % 7 + 1;
+
+  /* Get year */
+  year = 1970;
+  while (1) {
+    if (RTC_LEAP_YEAR(year)) {
+      if (unix >= 366) {
+        unix -= 366;
+      } else {
+        break;
+      }
+    } else if (unix >= 365) {
+      unix -= 365;
+    } else {
+      break;
+    }
+    year++;
+  }
+  /* Get year in xx format */
+  data->year = (uint8_t) (year - 2000);
+  /* Get month */
+  for (data->month = 0; data->month < 12; data->month++) {
+    if (RTC_LEAP_YEAR(year)) {
+      if (unix >= (uint32_t)TM_RTC_Months[1][data->month]) {
+        unix -= TM_RTC_Months[1][data->month];
+      } else {
+        break;
+      }
+    } else if (unix >= (uint32_t)TM_RTC_Months[0][data->month]) {
+      unix -= TM_RTC_Months[0][data->month];
+    } else {
+      break;
+    }
+  }
+  /* Get month */
+  /* Month starts with 1 */
+  data->month++;
+  /* Get date */
+  /* Date starts with 1 */
+  data->day = unix + 1;
 }
 
 uint8_t RTC_ByteToBcd2(uint8_t Value)
