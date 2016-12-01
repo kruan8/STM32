@@ -26,6 +26,14 @@
 #define RECORDS_PER_SECTOR      (4096 / RECORD_SIZE)
 #define FULL_SECTOR             (RECORDS_PER_SECTOR * RECORD_SIZE)
 
+#ifdef DEBUG
+#define WAKEUP_INTERVAL_S    10  // 10 seconds
+#else
+#define WAKEUP_INTERVAL_S    (30 * 60)  // 30 minut
+#endif
+
+static uint16_t g_nWakeUpInterval_s = WAKEUP_INTERVAL_S;
+
 //static const uint8_t EmptyRecord[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 static const app_record_t EmptyRecord = { 0xFFFFFFFF, 0xFFFF};
 
@@ -50,6 +58,13 @@ void APP_Init(void)
 
   g_nCalTemp = Eeprom_ReadUint32(EEPROM_TEMP_C);
   g_nCalTempAdc = Eeprom_ReadUint32(EEPROM_TEMP_ADC);
+
+  // nacist interval z EEPROM (0 = neulozena hodnota)
+  uint32_t nInterval = Eeprom_ReadUint32(EEPROM_INTERVAL_S);
+  if (nInterval)
+  {
+    g_nWakeUpInterval_s = nInterval;
+  }
 
   APP_SupplyOnAndWait();  // set SUPPLY pin for output
 
@@ -89,8 +104,12 @@ void APP_Measure(void)
 
 #ifdef DEBUG
   uint8_t text[35];
-  snprintf((char*)text, sizeof(text), "VDDA:%d(mV)  TEMP:%d.%d / %d.%d", nVDDA, temp / 10, temp % 10,  tempInt / 10, tempInt % 10);
-  USART_PrintLine(text);
+  snprintf((char*)text, sizeof(text), "VDDA:%d(mV)  TEMP:", nVDDA);
+  USART_Print(text);
+  USART_PrintTemperature(temp);
+  USART_Print((uint8_t*) " / ");
+  USART_PrintTemperature(tempInt);
+  USART_PrintNewLine();
   USART_WaitForTC();
 #endif
 
@@ -205,10 +224,12 @@ void APP_PrintRecords()
       RTC_GetDateTimeFromUnix(&rtime, record.time);
 //      RTC_ConvertToStruct(record.time, &rtime);
 
-      snprintf((char*)text, sizeof(text), "%d.%d.%d %02d:%02d=%d,%d",
-          rtime.day, rtime.month, rtime.year, rtime.hour, rtime.min, record.temperature / 10, record.temperature % 10);
+      snprintf((char*)text, sizeof(text), "%d.%d.%d %02d:%02d=",
+          rtime.day, rtime.month, rtime.year, rtime.hour, rtime.min);
 
-      USART_PrintLine(text);
+      USART_Print(text);
+      USART_PrintTemperature(record.temperature);
+      USART_PrintNewLine();
     }
   }
 }
@@ -272,4 +293,17 @@ void APP_SaveCalTemp(int16_t nTemp, uint16_t nAdcValue)
   Eeprom_WriteUint32(EEPROM_TEMP_C, nTemp);
   Eeprom_WriteUint32(EEPROM_TEMP_ADC, nAdcValue);
   Eeprom_LockNVM();
+}
+
+void APP_SaveInterval(uint32_t nInterval)
+{
+  g_nWakeUpInterval_s = nInterval;
+  Eeprom_UnlockPELOCK();
+  Eeprom_WriteUint32(EEPROM_INTERVAL_S, nInterval);
+  Eeprom_LockNVM();
+}
+
+uint32_t APP_GetInterval_s(void)
+{
+  return g_nWakeUpInterval_s;
 }

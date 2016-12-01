@@ -14,18 +14,11 @@
 #include "FlashG25.h"
 #include "adc.h"
 
-#ifdef DEBUG
-#define WAKEUP_INTERVAL_S    10  // 10 seconds
-#elif
-#define WAKEUP_INTERVAL_S    (30 * 60)  // 30 minut
-#endif
-
 #define BUFFER_SIZE  128
 
 static uint8_t g_BufferIn[BUFFER_SIZE];
 static uint8_t g_BufferInPos;
 static bool    g_bCommandReady;
-static uint16_t g_nWakeUpInterval_s = WAKEUP_INTERVAL_S;
 
 static uint32_t g_nRecords;
 static uint32_t g_nFreeRecords;
@@ -111,7 +104,7 @@ void USART_ProcessCommand()
       USART_SetTime();
       break;
     case 'I':
-      USART_SetWakeUpInterval();
+      USART_SetInterval();
       break;
     case 'X':
       USART_EraseMemory();
@@ -161,6 +154,7 @@ void USART_PrintStatus()
 {
   uint8_t text[50];
 
+
   snprintf((char*)text, sizeof (text), "Date&time: ");
   USART_Print(text);
   USART_PrintDateTime();
@@ -168,13 +162,14 @@ void USART_PrintStatus()
   snprintf((char*)text, sizeof (text), "Battery:%d(mV)", nVDDA);
   USART_PrintLine(text);
   int16_t temp = Adc_CalcTemperature(Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA));
-  snprintf((char*)text, sizeof (text), "Temperature:%d,%d(C)", temp / 10, temp % 10);
-  USART_PrintLine(text);
-  snprintf((char*)text, sizeof (text), "Interval:%d(min)", g_nWakeUpInterval_s / 60);
+  USART_Print((uint8_t*)"Temperature:");
+  USART_PrintTemperature(temp);
+  USART_PrintLine((uint8_t*)"(C)");
+  snprintf((char*)text, sizeof (text), "Interval:%d(min)", APP_GetInterval_s() / 60);
   USART_PrintLine(text);
   snprintf((char*)text, sizeof (text), "Number of records:%lu", g_nRecords);
   USART_PrintLine(text);
-  uint32_t nDays = g_nFreeRecords / (86400 / g_nWakeUpInterval_s);
+  uint32_t nDays = g_nFreeRecords / (86400 / APP_GetInterval_s());
   snprintf((char*)text, sizeof (text), "Free memory:%lu records (%lu days)", g_nFreeRecords, nDays);
   USART_PrintLine(text);
 }
@@ -189,6 +184,19 @@ void USART_PrintHelp()
   USART_PrintLine((uint8_t*)"Temperature list: 'L'");
   USART_PrintLine((uint8_t*)"Erase memory: 'X+X'");
   USART_PrintLine((uint8_t*)"Print help: ENTER");
+}
+
+void USART_PrintTemperature(int16_t nTemp)
+{
+  uint8_t text[50];
+  if (nTemp < 0)
+  {
+    USART_Putc('-');
+  }
+
+  nTemp = abs (nTemp);
+  snprintf((char*)text, sizeof (text), "%d,%d", nTemp / 10, nTemp % 10);
+  USART_Print(text);
 }
 
 void USART_EraseMemory()
@@ -253,25 +261,20 @@ void USART_SetTime()
   USART_PrintDateTime();
 }
 
-void USART_SetWakeUpInterval()
+void USART_SetInterval()
 {
   if (g_BufferIn[1])
   {
     uint16_t nInterval = atoi((char*)&g_BufferIn[1]);
     if (nInterval)
     {
-      g_nWakeUpInterval_s = nInterval * 60;
+      APP_SaveInterval(nInterval * 60);
     }
   }
 
   uint8_t text[20];
-  snprintf((char*)text, sizeof(text), "Interval=%d min", g_nWakeUpInterval_s / 60);
+  snprintf((char*)text, sizeof(text), "Interval=%d min", APP_GetInterval_s() / 60);
   USART_PrintLine(text);
-}
-
-uint16_t USART_GetWakeUpInterval()
-{
-  return g_nWakeUpInterval_s;
 }
 
 void USART_PrintDateTime()

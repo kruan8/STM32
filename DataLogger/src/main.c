@@ -53,7 +53,7 @@ int main(void)
   USART_DeInit();
 #endif
 
-  RTC_SetWakeUp(USART_GetWakeUpInterval());
+  RTC_SetWakeUp(APP_GetInterval_s());
   while (1)
   {
     APP_Measure();
@@ -76,5 +76,4 @@ void Tests(void)
   RTC_Get(&dt);
   uint32_t t = RTC_GetUnixTimeStamp(&dt);
   RTC_GetDateTimeFromUnix(&dt, t);
-
 }

@@ -18,11 +18,11 @@ void USART_ProcessCommand();
 void USART_PrintHeader(uint32_t nRecords, uint32_t nFreeRecords, uint32_t nBatVoltage, app_error_t eErr);
 void USART_PrintStatus();
 void USART_PrintHelp();
+void USART_PrintTemperature(int16_t nTemp);
 void USART_SetDate();
 void USART_SetTime();
 void USART_EraseMemory();
-void USART_SetWakeUpInterval();
-uint16_t USART_GetWakeUpInterval();
+void USART_SetInterval();
 void USART_PrintDateTime();
 void USART_CalTemp();
 
