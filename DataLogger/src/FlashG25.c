@@ -184,7 +184,7 @@ uint32_t FlashG25_GetID()
 
 bool FlashG25_IsPresent()
 {
-  return (FlashG25_GetID() == 0xC84011) ? true : false;
+  return ((FlashG25_GetID() >> 8) == 0xC840) ? true : false;
 }
 
 uint32_t FlashG25_GetSectors()
