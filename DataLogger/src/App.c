@@ -53,8 +53,7 @@ void APP_Init(void)
 
   APP_SupplyOnAndWait();  // set SUPPLY pin for output
 
-  USART_Configure_GPIO();
-  USART_Configure();
+  USART_Init();
 
   uint32_t nFreeRecords = 0;
   if (FlashG25_Init())
@@ -80,28 +79,10 @@ void APP_Measure(void)
 
   APP_SupplyOnAndWait();
 
-  rtc_record_time_t dt;
-
-//  // ---------- Test RTC ---------------------------------------------------------
-//  dt.day = 15;
-//  dt.month = 11;
-//  dt.year = 16;
-//  dt.hour = 18;
-//  dt.min = 25;
-//  RTC_Set(&dt, true, true);
-//  RTC_Get(&dt);
-//  uint32_t t = RTC_ConvertFromStruct(&dt);
-//  /****/ RTC_ConvertToStruct(t, &dt); /****/  // spatne pocita prestupny rok !!!
-//  // --------------------------------------------------------------------------------
-
-  RTC_Get(&dt);
-//  RTC_ConvertFromRtc(&time, &date, &dt);
-  uint32_t nDt = RTC_ConvertFromStruct(&dt);
-
   // zmerit napajeci napeti VDDA
   uint16_t nVDDA = Adc_MeasureRefInt();
 
-  // namerit teplotu
+  // zmerit teplotu
   uint16_t tempADC = Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA);
   int16_t temp = Adc_CalcTemperature(tempADC);
   int16_t tempInt = Adc_MeasureTemperatureInternal(Adc_MeasureRefInt());
@@ -113,11 +94,15 @@ void APP_Measure(void)
   USART_WaitForTC();
 #endif
 
+  // prepare record
   app_record_t record;
-  record.time = nDt;
+  rtc_record_time_t dt;
+
+  RTC_Get(&dt);
+  record.time = RTC_GetUnixTimeStamp(&dt);
   record.temperature = temp;
 
-  // ulozit do Flash
+  // save do Flash
   if (g_nSectorPosition == 0)  // zacatek noveho sektoru, tak ho smazat
   {
     FlashG25_SectorErase(g_nSector);
@@ -217,9 +202,10 @@ void APP_PrintRecords()
       nRecords++;
 
       rtc_record_time_t rtime;
-      RTC_ConvertToStruct(record.time, &rtime);
+      RTC_GetDateTimeFromUnix(&rtime, record.time);
+//      RTC_ConvertToStruct(record.time, &rtime);
 
-      snprintf((char*)text, sizeof(text), "%d.%d.%d %02d:%02d>%d.%d",
+      snprintf((char*)text, sizeof(text), "%d.%d.%d %02d:%02d=%d,%d",
           rtime.day, rtime.month, rtime.year, rtime.hour, rtime.min, record.temperature / 10, record.temperature % 10);
 
       USART_PrintLine(text);

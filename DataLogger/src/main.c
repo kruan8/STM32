@@ -29,12 +29,17 @@
  *
  */
 
+void Tests(void);
+
 int main(void)
 {
   SystemCoreClockUpdate();
+
   SysTick_Config(2097);
 
   APP_Init();
+
+  // Tests();
 
   while (RTC_GetUsartTimer())
   {
@@ -43,10 +48,33 @@ int main(void)
 
   USART_PrintLine((uint8_t*)"Exit to measure mode");
   USART_WaitForTC();
+
+#ifndef DEBUG
+  USART_DeInit();
+#endif
+
   RTC_SetWakeUp(USART_GetWakeUpInterval());
   while (1)
   {
     APP_Measure();
     APP_StopMode();
   }
+}
+
+void Tests(void)
+{
+  // ---------- Test RTC ---------------
+  rtc_record_time_t dt;
+
+  dt.day = 15;
+  dt.month = 11;
+  dt.year = 16;
+  dt.hour = 18;
+  dt.min = 25;
+  dt.sec = 0;
+  RTC_Set(&dt, true, true);
+  RTC_Get(&dt);
+  uint32_t t = RTC_GetUnixTimeStamp(&dt);
+  RTC_GetDateTimeFromUnix(&dt, t);
+
 }

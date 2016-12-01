@@ -9,7 +9,7 @@
 #define RTC_H_
 
 #include "stm32l0xx.h"
-#include "stdbool.h"
+#include <stdbool.h>
 
 typedef struct
 {
@@ -54,9 +54,8 @@ uint32_t RTC_GetTicks();
 uint32_t RTC_GetUsartTimer();
 void RTC_SetUsartTimer(uint32_t nInterval_ms);
 
-void RTC_ConvertToStruct (uint32_t time, rtc_record_time_t* stime);
-uint32_t RTC_ConvertFromStruct(rtc_record_time_t* stime);
-void RTC_ConvertFromRtc(rtc_time_t* time, rtc_date_t* date, rtc_record_time_t* rtime);
+int32_t RTC_GetUnixTimeStamp(rtc_record_time_t* data);
+void RTC_GetDateTimeFromUnix(rtc_record_time_t* data, uint32_t unix);
 
 uint8_t RTC_ByteToBcd2(uint8_t Value);
 uint8_t RTC_Bcd2ToByte(uint8_t Value);
