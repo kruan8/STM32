@@ -159,13 +159,13 @@ void USART_PrintStatus()
   USART_Print(text);
   USART_PrintDateTime();
   uint16_t nVDDA = Adc_MeasureRefInt();
-  snprintf((char*)text, sizeof (text), "Battery:%d(mV)", nVDDA);
+  snprintf((char*)text, sizeof (text), "Battery:%d,%.2d(V)", nVDDA / 1000, (nVDDA / 10) % 100);
   USART_PrintLine(text);
   int16_t temp = Adc_CalcTemperature(Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA));
   USART_Print((uint8_t*)"Temperature:");
   USART_PrintTemperature(temp);
   USART_PrintLine((uint8_t*)"(C)");
-  snprintf((char*)text, sizeof (text), "Interval:%d(min)", APP_GetInterval_s() / 60);
+  snprintf((char*)text, sizeof (text), "Interval:%d(min)", (uint16_t)APP_GetInterval_s() / 60);
   USART_PrintLine(text);
   snprintf((char*)text, sizeof (text), "Number of records:%lu", g_nRecords);
   USART_PrintLine(text);

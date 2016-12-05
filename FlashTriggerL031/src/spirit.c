@@ -108,11 +108,7 @@ void Spirit_WriteCommand(uint8_t nCommand, SpiritState state)
 
 void Spirit_InitRegs()
 {
-<<<<<<< HEAD
   Spirit_WriteReg(SYNTH_CONFIG0_BASE, 160);      // 0x9F  split time=3.47 ns
-=======
-  Spirit_WriteReg(159, 160);      // 0x9F  split time=3.47 ns
->>>>>>> branch 'master' of https://github.com/kruan8/STM32
   Spirit_WriteCommand(COMMAND_STANDBY, MC_STATE_STANDBY);
 
   Spirit_WriteReg(180, 33);       // 0xB4 (XO_RCO_TEST)
@@ -121,11 +117,7 @@ void Spirit_InitRegs()
   Spirit_WriteReg(163, 53);       // 0xA3 (DEM_CONFIG)  enable initialization
   Spirit_WriteReg(7, 54);         // (IF_OFFSET_ANA)  Intermediate frequency setting for the analog RF synthesizer.
 
-<<<<<<< HEAD
   Spirit_WriteReg(ANA_FUNC_CONF0_BASE, 192);
-=======
-  Spirit_WriteReg(1, 192);        // ANA_FUNC_CONF
->>>>>>> branch 'master' of https://github.com/kruan8/STM32
 
   // Channel number. This value is  multiplied by the channel
   // spacing and added to the synthesizer base frequency to
@@ -265,20 +257,12 @@ void Spirit_ProtocolInitRegs(void)
 
 void Spirit_EnableSQIRegs(void)
 {
-<<<<<<< HEAD
   Spirit_WriteReg(QI_BASE, 2);
   Spirit_WriteReg(QI_BASE, 2);
-=======
-  Spirit_WriteReg(58, 2);       // 0x3A
-  Spirit_WriteReg(58, 2);
->>>>>>> branch 'master' of https://github.com/kruan8/STM32
 }
 
 void Spirit_SetRssiTHRegs(void)
 {
-<<<<<<< HEAD
   Spirit_WriteReg(RSSI_TH_BASE, 20);
-=======
-  Spirit_WriteReg(34, 20);      // 0x22
->>>>>>> branch 'master' of https://github.com/kruan8/STM32
+
 }
