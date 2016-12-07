@@ -25,6 +25,7 @@ static uint32_t g_nFreeRecords;
 static uint32_t g_nBatVoltage;
 
 static const uint8_t T_Version[] = "---- DATA LOGGER v0.1 ----";
+static const uint8_t T_Email[] = "vpriesol@seznam.cz";
 static const uint8_t T_NewLine[] = "\r\n";
 
 void USART_Init(void)
@@ -131,11 +132,11 @@ void USART_PrintHeader(uint32_t nRecords, uint32_t nFreeRecords, uint32_t nBatVo
 
   USART_PrintNewLine();
   USART_PrintLine(T_Version);
+  USART_PrintLine(T_Email);
+  USART_PrintNewLine();
 
   USART_PrintStatus();
   USART_PrintNewLine();
-//  USART_PrintHelp();
-//  USART_PrintNewLine();
 
   switch (eErr)
   {
@@ -153,7 +154,6 @@ void USART_PrintHeader(uint32_t nRecords, uint32_t nFreeRecords, uint32_t nBatVo
 void USART_PrintStatus()
 {
   uint8_t text[50];
-
 
   snprintf((char*)text, sizeof (text), "Date&time: ");
   USART_Print(text);
@@ -273,7 +273,7 @@ void USART_SetInterval()
   }
 
   uint8_t text[20];
-  snprintf((char*)text, sizeof(text), "Interval=%d min", APP_GetInterval_s() / 60);
+  snprintf((char*)text, sizeof(text), "Interval=%d min", (uint16_t)(APP_GetInterval_s() / 60));
   USART_PrintLine(text);
 }
 
