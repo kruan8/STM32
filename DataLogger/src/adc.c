@@ -38,10 +38,8 @@ void Adc_Init(void)
          by selecting TRG4 (EXTSEL = 100)*/
   /* (4) Select a sampling mode of 111 i.e. 239.5 ADC clk to be greater than 5us */
   /* (5) Wake-up the VREFINT (only for VLCD, Temp sensor and VRefInt) */
-  ADC1->CFGR2 = (ADC1->CFGR2 & ~(ADC_CFGR2_CKMODE)) | ADC_CFGR2_CKMODE_0; // 01: PCLK/2 (Synchronous clock mode)
-//  ADC1->CFGR1 |= ADC_CFGR1_EXTEN_0 | ADC_CFGR1_EXTSEL_2 ; /* (2) */
-
-  ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2; /* (4) */
+  ADC1->CFGR2 = (ADC1->CFGR2 & ~(ADC_CFGR2_CKMODE)) | ADC_CFGR2_CKMODE_0; // 01: PCLK/2 (Synchronous clock mode) (ADC clock = 1MHz)
+  ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2; /* (4) */ //160 ADC clock cycles
 //  ADC1->IER = ADC_IER_EOCIE; // interrupt enable 'end of conversion'  (ADC_IER_EOSEQIE | ADC_IER_OVRIE)
 
   // Calibrate ADC
@@ -113,7 +111,7 @@ int16_t Adc_MeasureTemperatureInternal(uint16_t nVDDA)
 
   int32_t temperature;
   temperature = ((nValue * nVDDA / TEMP_VDD_CALIB) - (int32_t) *TEMP30_CAL_ADDR );
-  temperature = temperature * (int32_t)(130 - 30) * 10;
+  temperature = temperature * (int32_t)(1300 - 300);
   temperature = temperature / (int32_t)(*TEMP130_CAL_ADDR - *TEMP30_CAL_ADDR);
   temperature = temperature + 300;
 

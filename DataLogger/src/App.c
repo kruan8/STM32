@@ -100,9 +100,10 @@ void APP_Measure(void)
   // zmerit teplotu
   uint16_t tempADC = Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA);
   int16_t temp = Adc_CalcTemperature(tempADC);
-  int16_t tempInt = Adc_MeasureTemperatureInternal(Adc_MeasureRefInt());
 
 #ifdef DEBUG
+  int16_t tempInt = Adc_MeasureTemperatureInternal(Adc_MeasureRefInt());
+
   uint8_t text[35];
   snprintf((char*)text, sizeof(text), "VDDA:%d(mV)  TEMP:", nVDDA);
   USART_Print(text);
@@ -288,6 +289,7 @@ void APP_StopMode(void)
 
 void APP_SaveCalTemp(int16_t nTemp, uint16_t nAdcValue)
 {
+  // Todo: nebylo by lepsi ukladat offset teploty a ten potom jenom pricitat?
   // ulozit do EEPROM
   Eeprom_UnlockPELOCK();
   Eeprom_WriteUint32(EEPROM_TEMP_C, nTemp);
