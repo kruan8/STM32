@@ -231,7 +231,7 @@ void Spirit_ProtocolInitRegs(void)
   // automatic packet filtering mode enabled
   // vypnout vsechny filtry
   // !! kdyz byly filtry povoleny a v registru PCKT_FLT_OPTIONS_BASE vsechny zakazany, tak stejne se pakety zahazovaly !!
-  Spirit_WriteReg(PROTOCOL1_BASE, 0 /*PROTOCOL1_AUTO_PCKT_FLT_MASK*/);
+  Spirit_WriteReg(PROTOCOL1_BASE, 1 /*PROTOCOL1_AUTO_PCKT_FLT_MASK*/);
 
   // filter option
 //  Spirit_WriteReg(PCKT_FLT_OPTIONS_BASE, PCKT_FLT_OPTIONS_RX_TIMEOUT_AND_OR_SELECT);

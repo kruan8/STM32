@@ -12,8 +12,6 @@
 #include "SPIRIT_Config.h"
 
 /* Exported constants --------------------------------------------------------*/
-#define MY_ADDRESS                  0x44
-#define DESTINATION_ADDRESS         0x44
 
 /*  Radio configuration parameters  */
 #define XTAL_OFFSET_PPM             0
@@ -57,13 +55,15 @@
 #define EN_FILT_MULTICAST_ADDRESS   S_DISABLE
 #define EN_FILT_BROADCAST_ADDRESS   S_DISABLE
 #define EN_FILT_SOURCE_ADDRESS      S_DISABLE//S_ENABLE
+#define MY_ADDRESS                  0x44
+#define DESTINATION_ADDRESS         0x44
 #define SOURCE_ADDR_MASK            0xf0
 #define SOURCE_ADDR_REF             0x37
 #define MULTICAST_ADDRESS           0xEE
 #define BROADCAST_ADDRESS           0xFF
 
 
-#define EN_AUTOACK                      S_DISABLE
+#define EN_AUTOACK                    S_DISABLE
 #define EN_PIGGYBACKING               S_DISABLE
 #define MAX_RETRANSMISSIONS           PKT_DISABLE_RETX
 

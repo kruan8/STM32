@@ -255,18 +255,23 @@ void App_Init(void)
   Spirit_InitRegs();// Spirit Radio config
 
   Spirit_SetPowerRegs();  // Spirit Radio set power
-  Spirit_ProtocolInitRegs();  // Spirit Packet config
+//  Spirit_ProtocolInitRegs();  // Spirit Packet config
+
+  BasicProtocolInit();
+
   Spirit_EnableSQIRegs();
   Spirit_SetRssiTHRegs();
+
+  g_eState = APP_STATE_START_RX;
 
   // pro master nakonfigurovat optodiodu
   if (g_Master)
   {
     Gpio_OptoInit(ADCGetConv);
+    g_eState = APP_STATE_IDLE;
   }
 
   // cekat na uvolneni tlacitka
-  g_eState = APP_STATE_IDLE;
   uint16_t nTime = 1;
   while (nTime)
   {
@@ -380,11 +385,11 @@ void AppliSendBuff(uint8_t* pBuffer, uint8_t nLength)
 {
   PktBasicAddressesInit xAddressInit=
   {
-    .xFilterOnMyAddress = S_ENABLE,
+    .xFilterOnMyAddress = S_DISABLE,
     .cMyAddress = MY_ADDRESS,
     .xFilterOnMulticastAddress = S_DISABLE,
     .cMulticastAddress = MULTICAST_ADDRESS,
-    .xFilterOnBroadcastAddress = S_ENABLE,
+    .xFilterOnBroadcastAddress = S_DISABLE,
     .cBroadcastAddress = BROADCAST_ADDRESS
   };
 
@@ -432,17 +437,17 @@ void AppliReceiveBuff(uint8_t *RxFrameBuff, uint8_t cRxlen)
   exitTime = SET;
   exitCounter = TIME_TO_EXIT_RX;
 
-  PktBasicAddressesInit xAddressInit=
-  {
-    .xFilterOnMyAddress = S_ENABLE,
-    .cMyAddress = MY_ADDRESS,
-    .xFilterOnMulticastAddress = S_DISABLE,
-    .cMulticastAddress = MULTICAST_ADDRESS,
-    .xFilterOnBroadcastAddress = S_ENABLE,
-    .cBroadcastAddress = BROADCAST_ADDRESS
-  };
-
-  SpiritPktBasicAddressesInit(&xAddressInit);
+//  PktBasicAddressesInit xAddressInit=
+//  {
+//    .xFilterOnMyAddress = S_DISABLE,
+//    .cMyAddress = MY_ADDRESS,
+//    .xFilterOnMulticastAddress = S_DISABLE,
+//    .cMulticastAddress = MULTICAST_ADDRESS,
+//    .xFilterOnBroadcastAddress = S_ENABLE,
+//    .cBroadcastAddress = BROADCAST_ADDRESS
+//  };
+//
+//  SpiritPktBasicAddressesInit(&xAddressInit);
 
   /* Spirit IRQs disable */
   Spirit1DisableIrq();
@@ -488,6 +493,19 @@ void BasicProtocolInit(void)
 
   // Spirit Packet config
   SpiritPktBasicInit(&xBasicInit);
+
+  PktBasicAddressesInit xAddressInit=
+  {
+    .xFilterOnMyAddress = S_DISABLE,
+    .cMyAddress = MY_ADDRESS,
+    .xFilterOnMulticastAddress = S_DISABLE,
+    .cMulticastAddress = MULTICAST_ADDRESS,
+    .xFilterOnBroadcastAddress = S_DISABLE,
+    .cBroadcastAddress = BROADCAST_ADDRESS
+  };
+
+  SpiritPktBasicAddressesInit(&xAddressInit);
+  SpiritPktBasicSetFormat();
 }
 
 /**
