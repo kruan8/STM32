@@ -88,7 +88,7 @@ void Gpio_OptoInit(Ptr_OnAdcConv pOnAdcConv)
          by selecting TRG4 (EXTSEL = 100)*/
   /* (4) Select a sampling mode of 111 i.e. 239.5 ADC clk to be greater than 5us */
   /* (5) Wake-up the VREFINT (only for VLCD, Temp sensor and VRefInt) */
-  //ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE; /* (1) */
+  ADC1->CFGR2 = (ADC1->CFGR2 & ~ADC_CFGR2_CKMODE) | ADC_CFGR2_CKMODE_0; /* (1) PCLK/2 */
   ADC1->CFGR1 |= ADC_CFGR1_EXTEN_0 | ADC_CFGR1_EXTSEL_2 ; /* (2) */
   ADC1->CHSELR = ADC_OPTO_INPUT; // channel
   ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2; /* (4) */
@@ -185,7 +185,7 @@ void Gpio_FlashBlink()
 // pomale zhasinani LED
 void Gpio_LedOffDiming()
 {
-  uint16_t led_range = 0x450;
+  uint16_t led_range = 0x350;
   uint16_t led_rate = led_range;
 
   while (led_rate)
