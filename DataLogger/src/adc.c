@@ -23,6 +23,8 @@
 
 #define REF_MV     3000L
 
+#define OVERSAMPLING
+
 void Adc_Init(void)
 {
   // Configure ADC INPUT pins as analog input
@@ -39,6 +41,15 @@ void Adc_Init(void)
   /* (4) Select a sampling mode of 111 i.e. 239.5 ADC clk to be greater than 5us */
   /* (5) Wake-up the VREFINT (only for VLCD, Temp sensor and VRefInt) */
   ADC1->CFGR2 = (ADC1->CFGR2 & ~(ADC_CFGR2_CKMODE)) | ADC_CFGR2_CKMODE_0; // 01: PCLK/2 (Synchronous clock mode) (ADC clock = 1MHz)
+
+#ifdef OVERSAMPLING
+  // set oversampling, ! bity CKMODE registru CFGR2 musi byt nastaveny pred jakymkoliv nastaveni ADC !
+  ADC1->CFGR2 = ADC1->CFGR2 & (~ADC_CFGR2_OVSR);
+  ADC1->CFGR2 |= ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0; // sampling ratio
+  ADC1->CFGR2 = (ADC1->CFGR2 & ~ADC_CFGR2_OVSS) | ADC_CFGR2_OVSS_2;         // sampling shift
+  ADC1->CFGR2 |= ADC_CFGR2_OVSE;
+#endif
+
   ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2; /* (4) */ //160 ADC clock cycles
 //  ADC1->IER = ADC_IER_EOCIE; // interrupt enable 'end of conversion'  (ADC_IER_EOSEQIE | ADC_IER_OVRIE)
 
@@ -118,7 +129,6 @@ int16_t Adc_MeasureTemperatureInternal(uint16_t nVDDA)
   return (int16_t)temperature;
 }
 
-
 uint16_t Adc_MeasureTemperature(void)
 {
   ADC1->CHSELR = ADC_INPUT_TEMPERATURE;       // channel
@@ -140,9 +150,9 @@ int16_t Adc_CalcTemperature(uint16_t nValue)
 uint16_t Adc_MeasureRefInt(void)
 {
   ADC1->CHSELR = ADC_INPUT_REFINT;       // channel
-//  nSumValue = Adc_Oversampling();
 
   uint16_t nAdcValue = Adc_Measure();
+
   uint16_t nVrefIntCal = *VREFINT_CAL_ADDR;
 
   // VDDA = 3 V x VREFINT_CAL / VREFINT_DATA
@@ -153,6 +163,12 @@ uint16_t Adc_MeasureRefInt(void)
 
 uint16_t Adc_Measure()
 {
+#ifdef OVERSAMPLING
+  ADC1->CR |= ADC_CR_ADSTART;
+  while (ADC1->CR & ADC_CR_ADSTART);
+  return ADC1->DR;
+#else
+
   uint32_t nSumValue = 0;
   for (uint8_t i = 0; i < ADC_SAMPLES; i++)
   {
@@ -162,17 +178,6 @@ uint16_t Adc_Measure()
   }
 
   return (uint16_t) (nSumValue / ADC_SAMPLES);
+#endif
 }
 
-uint16_t Adc_Oversampling()
-{
-  while (ADC1->CR & ADC_CR_ADSTART);
-  ADC1->CFGR2 = (ADC1->CFGR2 & (~ADC_CFGR2_OVSR)) | (ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0); // sampling ratio
-  ADC1->CFGR2 = (ADC1->CFGR2 & (~ADC_CFGR2_OVSS)) | ADC_CFGR2_OVSS_2;         // sampling shift
-  ADC1->CFGR2 |= ADC_CFGR2_OVSE;
-  ADC1->CR |= ADC_CR_ADSTART;
-
-//  while (!(ADC1->ISR & ADC_ISR_EOC));
-  while (ADC1->CR & ADC_CR_ADSTART);
-  return ADC1->DR;
-}
