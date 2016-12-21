@@ -80,6 +80,7 @@ PktBasicAddressesInit xAddressInit =
 
 #define EEPROM_STORAGE1       0
 #define EEPROM_STORAGE2       (EEPROM_STORAGE1 + sizeof(uint32_t))
+#define EEPROM_FLASHES        (EEPROM_STORAGE2 + sizeof(uint32_t))
 
 uint8_t aCheckBroadcast[] = {'C','H','E','C','K'};
 uint8_t aFlashBroadcast[] = {'F','L','A','S','H'};
@@ -115,7 +116,6 @@ volatile bool g_bTimeCounterStop;         // spinac citace
 
 uint16_t g_nFlash1;
 uint16_t g_nFlash2;
-uint16_t g_nFlash3;
 
 void App_Exec(void)
 {
@@ -317,6 +317,7 @@ void App_Init(void)
 void Programming()
 {
   bool bTimeOver = false;
+  uint8_t nFlashes = 0;
 
   g_nFlash1 = 0;
   g_nFlash2 = 0;
@@ -338,7 +339,8 @@ void Programming()
 
       if (!GetOffTime())
       {
-        Gpio_StandbyMode();
+        g_eState = APP_STATE_START;
+        return;
       }
 
       if (g_nFlash2 && g_bTimeCounterStop)
@@ -349,6 +351,7 @@ void Programming()
       }
     }
 
+    nFlashes++;
     if (bTimeOver)
     {
       break;
@@ -358,9 +361,9 @@ void Programming()
     g_nFlash2 = g_nFlash1;
     g_nFlash1 = g_nTimeCounter;
 
-    // wait 5ms pro odezneni zablesku
-    uint32_t time = GetTicks_ms();
-    while ((GetTicks_ms() - time) < 5);
+    // wait 250 us pro odezneni zablesku
+    g_nDelayTimer = 5;
+    while (g_nDelayTimer);
     g_bFlashFlag = false;
   }
 
@@ -368,6 +371,8 @@ void Programming()
   Eeprom_UnlockPELOCK();
   Eeprom_WriteUint32(EEPROM_STORAGE1, g_nFlash1);
   Eeprom_WriteUint32(EEPROM_STORAGE2, g_nFlash2);
+  Eeprom_WriteUint32(EEPROM_FLASHES, nFlashes);
+
   Eeprom_LockNVM();
 
   // pokud g_nFlash2 == 0, neni interval (1 zablesk)
@@ -552,8 +557,23 @@ void FlashActive()
 
 void ADCGetConv(uint16_t ADCValue)
 {
-  /* Get ADC1 converted data */
-  ADCValue = ADCValue >> 4;
+  // obsluha citacu 50us
+  if (!g_bTimeCounterStop)
+  {
+    g_nTimeCounter++;
+    if (g_nTimeCounter == 0)
+    {
+      g_bTimeCounterStop = true;
+    }
+  }
+
+  if (g_nDelayTimer)
+  {
+    g_nDelayTimer--;
+  }
+
+  /* Zparacovat data z ADC */
+  ADCValue = ADCValue >> 5;
 
   if (ADCValue == g_nOptoValue)
   {
@@ -576,25 +596,6 @@ void ADCGetConv(uint16_t ADCValue)
   {
     g_nOptoValue--;
   }
-
-  if (!g_bTimeCounterStop)
-  {
-    g_nTimeCounter++;
-    if (g_nTimeCounter == 0)
-    {
-      g_bTimeCounterStop = true;
-    }
-  }
-
-  if (!g_bDelayOver)
-  {
-    g_nDelayTimer--;
-    if (g_nDelayTimer == 0)
-    {
-      g_bDelayOver = true;
-    }
-  }
-
 }
 
 
