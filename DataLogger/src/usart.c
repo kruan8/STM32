@@ -24,7 +24,7 @@ static uint32_t g_nRecords;
 static uint32_t g_nFreeRecords;
 static uint32_t g_nBatVoltage;
 
-static const uint8_t T_Version[] = "---- DATA LOGGER v0.1 ----";
+static const uint8_t T_Version[] = "---- DATA LOGGER v0.2 ----";
 static const uint8_t T_Email[] = "vpriesol@seznam.cz";
 static const uint8_t T_NewLine[] = "\r\n";
 
@@ -291,8 +291,7 @@ void USART_CalTemp()
   {
     if (g_BufferIn[3])
     {
-      int16_t nCalTemp = 0;
-      nCalTemp = atoi((char*)&g_BufferIn[3]);
+       int16_t nCalTemp = atoi((char*)&g_BufferIn[3]);
 
       //    if (atoi((char*)&g_BufferIn[3]))  // pokud je první hodnota platné èíslo
       //    {

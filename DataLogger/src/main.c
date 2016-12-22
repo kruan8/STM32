@@ -27,6 +27,10 @@
  *
  * Merici cyklus trva cca 35 ms (i s vystupem výpisu na seriový port).
  *
+ *
+ * v0.1 - prvni verze
+ * v0.2 - kalibrace nyni funguje jako ofset, ktery se uklada do EEPROM (CALxxx)
+ *        ADC meri pomoci oversamplingu
  */
 
 void Tests(void);

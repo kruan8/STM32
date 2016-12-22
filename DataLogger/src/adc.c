@@ -37,15 +37,11 @@ void Adc_Init(void)
   // Configure ADC
   RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;  // clock for ADC
 
-  /* (1) Select HSI16 by writing 00 in CKMODE (reset value) */
-  /* (2) Select the external trigger on falling edge and external trigger on TIM22_TRGO
-         by selecting TRG4 (EXTSEL = 100)*/
-  /* (4) Select a sampling mode of 111 i.e. 239.5 ADC clk to be greater than 5us */
-  /* (5) Wake-up the VREFINT (only for VLCD, Temp sensor and VRefInt) */
+  // ADC clock from APB (PCLK/2)
   ADC1->CFGR2 = (ADC1->CFGR2 & ~(ADC_CFGR2_CKMODE)) | ADC_CFGR2_CKMODE_0; // 01: PCLK/2 (Synchronous clock mode) (ADC clock = 1MHz)
 
 #ifdef OVERSAMPLING
-  // set oversampling, ! bity CKMODE registru CFGR2 musi byt nastaveny pred jakymkoliv nastaveni ADC !
+  // set oversampling, ! bity CKMODE registru CFGR2 musi byt nastaveny pred jakymkoliv nastaveni ADC - viz datasheet !
   ADC1->CFGR2 = ADC1->CFGR2 & (~ADC_CFGR2_OVSR);
   ADC1->CFGR2 |= ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0; // sampling ratio
   ADC1->CFGR2 = (ADC1->CFGR2 & ~ADC_CFGR2_OVSS) | ADC_CFGR2_OVSS_2;         // sampling shift
@@ -56,18 +52,13 @@ void Adc_Init(void)
 //  ADC1->IER = ADC_IER_EOCIE; // interrupt enable 'end of conversion'  (ADC_IER_EOSEQIE | ADC_IER_OVRIE)
 
   // Calibrate ADC
-  /* (1) Ensure that ADEN = 0 */
-  /* (2) Clear ADEN */
-  /* (3) Set ADCAL=1 */
-  /* (4) Wait until EOCAL=1 */
-  /* (5) Clear EOCAL */
-  if ((ADC1->CR & ADC_CR_ADEN) != 0) /* (1) */
+  if ((ADC1->CR & ADC_CR_ADEN) != 0) // Ensure that ADEN = 0
   {
-    ADC1->CR &= (uint32_t)(~ADC_CR_ADEN);  /* (2) */
+    ADC1->CR &= (uint32_t)(~ADC_CR_ADEN);  // Clear ADEN
   }
 
-  ADC1->CR |= ADC_CR_ADCAL; /* (3) */
-  while ((ADC1->ISR & ADC_ISR_EOCAL) == 0) /* (4) */
+  ADC1->CR |= ADC_CR_ADCAL; // Set ADCAL=1
+  while ((ADC1->ISR & ADC_ISR_EOCAL) == 0) // Clear EOCAL
   {
     /* For robust implementation, add here time-out management */
   }
