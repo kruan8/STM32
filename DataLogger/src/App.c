@@ -39,8 +39,6 @@ static const app_record_t EmptyRecord = { 0xFFFFFFFF, 0xFFFF};
 
 static uint32_t g_nSector;
 static uint16_t g_nSectorPosition;
-static int16_t  g_nCalTemp;
-static uint16_t  g_nCalTempAdc;
 
 static app_error_t g_eError = err_ok;
 
@@ -56,8 +54,8 @@ void APP_Init(void)
   Adc_Init();
   RTC_Init();
 
-  g_nCalTemp = Eeprom_ReadUint32(EEPROM_TEMP_C);
-  g_nCalTempAdc = Eeprom_ReadUint32(EEPROM_TEMP_ADC);
+  // nacteme konstanty z EEPROM
+  Adc_SetTempOffset(Eeprom_ReadUint32(EEPROM_TEMP_OFFSET));
 
   // nacist interval z EEPROM (0 = neulozena hodnota)
   uint32_t nInterval = Eeprom_ReadUint32(EEPROM_INTERVAL_S);
@@ -94,18 +92,13 @@ void APP_Measure(void)
 
   APP_SupplyOnAndWait();
 
-  // zmerit napajeci napeti VDDA
-  uint16_t nVDDA = Adc_MeasureRefInt();
-
-  // zmerit teplotu
-  uint16_t tempADC = Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA);
-  int16_t temp = Adc_CalcTemperature(tempADC);
+  int16_t temp = Adc_GetTemperature(true);
 
 #ifdef DEBUG
   int16_t tempInt = Adc_MeasureTemperatureInternal(Adc_MeasureRefInt());
 
   uint8_t text[35];
-  snprintf((char*)text, sizeof(text), "VDDA:%d(mV)  TEMP:", nVDDA);
+  snprintf((char*)text, sizeof(text), "VDDA:%d(mV)  TEMP:", Adc_MeasureRefInt());
   USART_Print(text);
   USART_PrintTemperature(temp);
   USART_Print((uint8_t*) " / ");
@@ -287,13 +280,11 @@ void APP_StopMode(void)
 //  Adc_Enable();
 }
 
-void APP_SaveCalTemp(int16_t nTemp, uint16_t nAdcValue)
+void APP_SaveTempOffset(int16_t nOffset)
 {
-  // Todo: nebylo by lepsi ukladat offset teploty a ten potom jenom pricitat?
   // ulozit do EEPROM
   Eeprom_UnlockPELOCK();
-  Eeprom_WriteUint32(EEPROM_TEMP_C, nTemp);
-  Eeprom_WriteUint32(EEPROM_TEMP_ADC, nAdcValue);
+  Eeprom_WriteUint32(EEPROM_TEMP_OFFSET, nOffset);
   Eeprom_LockNVM();
 }
 

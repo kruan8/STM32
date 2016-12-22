@@ -25,6 +25,8 @@
 
 #define OVERSAMPLING
 
+static int16_t g_nTempOffset = 0;
+
 void Adc_Init(void)
 {
   // Configure ADC INPUT pins as analog input
@@ -140,11 +142,32 @@ uint16_t Adc_CalcValueFromVDDA(uint16_t nValue, uint16_t nVDDA)
   return (uint32_t)nVDDA * nValue / REF_MV;
 }
 
-int16_t Adc_CalcTemperature(uint16_t nValue)
+int16_t Adc_CalcTemperature(uint16_t nValue, bool bOffsetEnable)
 {
   // temperature coefficient MCP9700A = 10mV/C, 0C = 500mV
   int32_t temp = (nValue * REF_MV / 4095) - 500;
+
+  if (bOffsetEnable)
+  {
+    temp += g_nTempOffset;      // pricteni kalibracniho offsetu
+  }
+
   return (int16_t)temp;
+}
+
+int16_t Adc_GetTemperature(bool bOffsetEnable)
+{
+  // zmerit napajeci napeti VDDA
+  uint16_t nVDDA = Adc_MeasureRefInt();
+
+  // zmerit teplotu
+  uint16_t tempADC = Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA);
+  return Adc_CalcTemperature(tempADC, bOffsetEnable);
+}
+
+void Adc_SetTempOffset(int16_t nOffset)
+{
+  g_nTempOffset = nOffset;
 }
 
 uint16_t Adc_MeasureRefInt(void)

@@ -11,9 +11,9 @@
 #include "stm32l0xx.h"
 #include <stdbool.h>
 
-#define EEPROM_TEMP_C        0                                      // int32
-#define EEPROM_TEMP_ADC      (EEPROM_TEMP_C + sizeof(int32_t))      // uint32
-#define EEPROM_INTERVAL_S      (EEPROM_TEMP_ADC + sizeof(int32_t))    // uint32
+#define EEPROM_TEMP_OFFSET    0                                      // int32
+#define EEPROM_TEMP_ADC      (EEPROM_TEMP_OFFSET + sizeof(int32_t))      // uint32
+#define EEPROM_INTERVAL_S    (EEPROM_TEMP_ADC + sizeof(int32_t))    // uint32
 
 typedef enum
 {
@@ -36,7 +36,7 @@ void APP_PrintRecords();
 void APP_SupplyOnAndWait();
 void APP_SupplyOff();
 void APP_StopMode(void);
-void APP_SaveCalTemp(int16_t nTemp, uint16_t nAdcValue);
+void APP_SaveTempOffset(int16_t nOffset);
 void APP_SaveInterval(uint32_t nInterval);
 uint32_t APP_GetInterval_s(void);
 

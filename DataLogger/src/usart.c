@@ -161,7 +161,7 @@ void USART_PrintStatus()
   uint16_t nVDDA = Adc_MeasureRefInt();
   snprintf((char*)text, sizeof (text), "Battery:%d,%.2d(V)", nVDDA / 1000, (nVDDA / 10) % 100);
   USART_PrintLine(text);
-  int16_t temp = Adc_CalcTemperature(Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA));
+  int16_t temp = Adc_CalcTemperature(Adc_CalcValueFromVDDA(Adc_MeasureTemperature(), nVDDA), true);
   USART_Print((uint8_t*)"Temperature:");
   USART_PrintTemperature(temp);
   USART_PrintLine((uint8_t*)"(C)");
@@ -286,23 +286,30 @@ void USART_PrintDateTime()
 
 void USART_CalTemp()
 {
+  // hodnota se zadava v desetinnach stupne (CAL225 = kalibrace na 22,5 C)
   if (!strncmp((char*)g_BufferIn, "CAL", 3))
   {
-    int16_t temp = 0;
-    if (atoi((char*)&g_BufferIn[3]))  // pokud je první hodnota platné èíslo
+    if (g_BufferIn[3])
     {
-      const char s[2] = ".";
-      char *pos = strtok((char*)&g_BufferIn[3], s); // find first occure
-      temp = atoi(pos) * 10;
+      int16_t nCalTemp = 0;
+      nCalTemp = atoi((char*)&g_BufferIn[3]);
 
-      pos = strtok(NULL, s); // find first occure
-      temp += atoi(pos);
-    }
+      //    if (atoi((char*)&g_BufferIn[3]))  // pokud je první hodnota platné èíslo
+      //    {
+      //      const char s[2] = ".";
+      //      char *pos = strtok((char*)&g_BufferIn[3], s); // find first occure
+      //      temp = atoi(pos) * 10;
+      //
+      //      pos = strtok(NULL, s); // find first occure
+      //      temp += atoi(pos);
+      //    }
 
-    if (temp)
-    {
-      uint16_t nAdcValue = Adc_MeasureTemperature();
-      APP_SaveCalTemp(temp, nAdcValue);
+      if (nCalTemp)
+      {
+        // zmerit teplotu a ulozit rozdil teplot (ofset)
+        int16_t temp = Adc_GetTemperature(false);
+        APP_SaveTempOffset(nCalTemp - temp);  // offset budeme pri vypoctu teploty pricitat
+      }
     }
   }
 }
