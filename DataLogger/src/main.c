@@ -30,7 +30,9 @@
  *
  * v0.1 - prvni verze
  * v0.2 - kalibrace nyni funguje jako ofset, ktery se uklada do EEPROM (CALxxx)
- *        ADC meri pomoci oversamplingu
+ *        ADC meri pomoci oversamplingu, oprava chyby cteni sektoru v 'APP_PrintRecords',
+ *        pri inicializaci vynulovan ukazatel pozice USART bufferu (g_BufferInPos),
+ *
  */
 
 void Tests(void);

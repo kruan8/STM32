@@ -204,7 +204,7 @@ void APP_PrintRecords()
   {
     for (uint16_t pos = 0; pos < FULL_SECTOR; pos += RECORD_SIZE)
     {
-      FlashG25_ReadData(g_nSector * G25_SECTOR_SIZE + pos, (uint8_t*) &record, RECORD_SIZE);
+      FlashG25_ReadData(sect * G25_SECTOR_SIZE + pos, (uint8_t*) &record, RECORD_SIZE);
       if (memcmp((uint8_t*) &record, &EmptyRecord, sizeof (EmptyRecord)) == 0)
       {
         snprintf((char*)text, sizeof(text), "Number of records:%lu", nRecords);

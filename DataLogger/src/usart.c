@@ -58,6 +58,7 @@ void USART_Init(void)
   }
 
   g_bCommandReady = false;
+  g_BufferInPos = 0;
 
   USART2->CR1 |= USART_CR1_RXNEIE;      // enable RX INT
 
