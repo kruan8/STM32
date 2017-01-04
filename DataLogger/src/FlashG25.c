@@ -93,9 +93,6 @@ void FlashG25_ReadData(uint32_t nAddr, uint8_t* pBuffer, uint8_t length)
   CS_ENABLE;
   SPI1Write(G25_COMID_READ_DATA);
   FlashG25_Send24bit(nAddr);
-//  SPI1Write(nAddr >> 16);
-//  SPI1Write(nAddr >> 8);
-//  SPI1Write(nAddr);
   while (length--)
   {
     *pBuffer++ = SPI1Write(DUMMY_BYTE);
@@ -121,9 +118,6 @@ void FlashG25_PageProgram(uint32_t nAddr, uint8_t* pBuffer, uint8_t length)
     CS_ENABLE;
     SPI1Write(G25_COMID_PAGE_PROGRAM);
     FlashG25_Send24bit(nAddr);
-//    SPI1Write(nAddr >> 16);
-//    SPI1Write(nAddr >> 8);
-//    SPI1Write(nAddr);
     uint16_t nSize = nBlockSize;
     while (nSize--)
     {
@@ -132,22 +126,20 @@ void FlashG25_PageProgram(uint32_t nAddr, uint8_t* pBuffer, uint8_t length)
 
     CS_DISABLE;
 
+    // cekani na ukonceni programovaciho cyklu
     while (FlashG25_GetStatus().WIP);
     nAddr += nBlockSize;
     length -= nBlockSize;
   }
 }
 
-void FlashG25_SectorErase(uint32_t nAddr)
+void FlashG25_SectorErase(uint32_t nSectorNumber)
 {
-  nAddr *= G25_SECTOR_SIZE;
+  nSectorNumber *= G25_SECTOR_SIZE;
   FlashG25_WriteEnable();
   CS_ENABLE;
   SPI1Write(G25_COMID_SECTOR_ERASE);
-  FlashG25_Send24bit(nAddr);
-//  SPI1Write(nAddr >> 16);
-//  SPI1Write(nAddr >> 8);
-//  SPI1Write(nAddr);
+  FlashG25_Send24bit(nSectorNumber);
   CS_DISABLE;
 
   while (FlashG25_GetStatus().WIP);

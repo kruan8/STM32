@@ -205,15 +205,15 @@ void USART_EraseMemory()
   if (g_BufferIn[1] == '+' && g_BufferIn[2] == 'X')
   {
     // vymazat pamet
-    for (uint8_t i = 0; i < 32; i++)
+    for (uint8_t i = 0; i < FlashG25_GetSectors(); i++)
     {
       FlashG25_SectorErase(i);
-      USART_Putc('.');
+      USART_Putc('x');
     }
 
     USART_PrintNewLine();
     USART_PrintLine((uint8_t*)"Memory is erased");
-    APP_FindFlashPosition();
+    g_nFreeRecords = APP_FindFlashPosition();
     g_nRecords = APP_GetRecords();
   }
 }

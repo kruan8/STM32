@@ -116,6 +116,7 @@ void APP_Measure(void)
   record.temperature = temp;
 
   // save do Flash
+  // Todo: opravdu je treba sektor mazat, kdyz je vymazana cela pamet?
   if (g_nSectorPosition == 0)  // zacatek noveho sektoru, tak ho smazat
   {
     FlashG25_SectorErase(g_nSector);
