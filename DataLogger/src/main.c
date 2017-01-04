@@ -33,7 +33,9 @@
  *        ADC meri pomoci oversamplingu, oprava chyby cteni sektoru v 'APP_PrintRecords',
  *        pri inicializaci vynulovan ukazatel pozice USART bufferu (g_BufferInPos),
  *
+ *
  */
+
 
 void Tests(void);
 
