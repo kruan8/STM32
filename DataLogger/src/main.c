@@ -35,6 +35,7 @@
  *        pri inicializaci vynulovan ukazatel pozice USART bufferu (g_BufferInPos),
  *        oprava vymazu pameti (nepocital s ruznou velikosti FLASH pameti),
  *
+ *
  */
 
 
