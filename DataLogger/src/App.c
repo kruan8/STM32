@@ -80,7 +80,7 @@ void APP_Init(void)
 
   USART_PrintHeader(APP_GetRecords(), nFreeRecords, Adc_MeasureRefInt(), g_eError);
   USART_Putc('>');
-  RTC_SetUsartTimer(10000);     // waiting for usart input
+  RTC_SetUsartTimer(15000);     // waiting for usart input
 }
 
 void APP_Measure(void)
@@ -283,6 +283,8 @@ void APP_StopMode(void)
 
 void APP_SaveTempOffset(int16_t nOffset)
 {
+  Adc_SetTempOffset(nOffset);
+
   // ulozit do EEPROM
   Eeprom_UnlockPELOCK();
   Eeprom_WriteUint32(EEPROM_TEMP_OFFSET, nOffset);

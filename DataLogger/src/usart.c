@@ -166,13 +166,15 @@ void USART_PrintStatus()
   USART_Print((uint8_t*)"Temperature:");
   USART_PrintTemperature(temp);
   USART_PrintLine((uint8_t*)"(C)");
-  snprintf((char*)text, sizeof (text), "Interval:%d(min)", (uint16_t)APP_GetInterval_s() / 60);
-  USART_PrintLine(text);
+  USART_PrintInterval();
   snprintf((char*)text, sizeof (text), "Number of records:%lu", g_nRecords);
   USART_PrintLine(text);
   uint32_t nDays = g_nFreeRecords / (86400 / APP_GetInterval_s());
   snprintf((char*)text, sizeof (text), "Free memory:%lu records (%lu days)", g_nFreeRecords, nDays);
   USART_PrintLine(text);
+  USART_Print((uint8_t*)"Temperature offset: ");
+  USART_PrintTemperature(Adc_GetTempOffset());
+  USART_PrintLine((uint8_t*)"(C)");
 }
 
 void USART_PrintHelp()
@@ -273,7 +275,12 @@ void USART_SetInterval()
     }
   }
 
-  uint8_t text[20];
+  USART_PrintInterval();
+}
+
+void USART_PrintInterval()
+{
+  uint8_t text[25];
   snprintf((char*)text, sizeof(text), "Interval=%d min", (uint16_t)(APP_GetInterval_s() / 60));
   USART_PrintLine(text);
 }
@@ -292,23 +299,12 @@ void USART_CalTemp()
   {
     if (g_BufferIn[3])
     {
-       int16_t nCalTemp = atoi((char*)&g_BufferIn[3]);
-
-      //    if (atoi((char*)&g_BufferIn[3]))  // pokud je první hodnota platné èíslo
-      //    {
-      //      const char s[2] = ".";
-      //      char *pos = strtok((char*)&g_BufferIn[3], s); // find first occure
-      //      temp = atoi(pos) * 10;
-      //
-      //      pos = strtok(NULL, s); // find first occure
-      //      temp += atoi(pos);
-      //    }
-
+      int16_t nCalTemp = atoi((char*)&g_BufferIn[3]);
       if (nCalTemp)
       {
         // zmerit teplotu a ulozit rozdil teplot (ofset)
         int16_t temp = Adc_GetTemperature(false);
-        APP_SaveTempOffset(nCalTemp - temp);  // offset budeme pri vypoctu teploty pricitat
+        APP_SaveTempOffset(nCalTemp - temp);  // odecist -> offset budeme pri vypoctu teploty pricitat
       }
     }
   }

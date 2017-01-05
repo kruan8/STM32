@@ -161,6 +161,11 @@ void Adc_SetTempOffset(int16_t nOffset)
   g_nTempOffset = nOffset;
 }
 
+int16_t Adc_GetTempOffset()
+{
+  return g_nTempOffset;
+}
+
 uint16_t Adc_MeasureRefInt(void)
 {
   ADC1->CHSELR = ADC_INPUT_REFINT;       // channel

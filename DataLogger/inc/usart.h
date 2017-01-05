@@ -23,6 +23,7 @@ void USART_SetDate();
 void USART_SetTime();
 void USART_EraseMemory();
 void USART_SetInterval();
+void USART_PrintInterval();
 void USART_PrintDateTime();
 void USART_CalTemp();
 

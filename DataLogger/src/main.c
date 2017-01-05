@@ -25,7 +25,8 @@
  * se spotreba snizi na 1uA. Bylo potreba uvest do analogoveho vstupu i pin PA7
  * pres ktery tekl proud (asi PULLUP od SPI) a na PA2 se objevilo napeti 2,8 V.
  *
- * Merici cyklus trva cca 35 ms (i s vystupem výpisu na seriový port).
+ * Merici cyklus trva v DEBUG konfiguraci (s vystupem výpisu na seriový port) cca 35 ms,
+ * bez vypisu asi 6ms.
  *
  *
  * v0.1 - prvni verze
@@ -34,6 +35,12 @@
  *        oprava chyby cteni sektoru v 'APP_PrintRecords',
  *        pri inicializaci vynulovan ukazatel pozice USART bufferu (g_BufferInPos),
  *        oprava vymazu pameti (nepocital s ruznou velikosti FLASH pameti),
+ *        vypis teplotniho ofsetu ve statusu + refresh ofsetu po kalibraci,
+ *        timeout pred vstupem do mereni prodlouzen na 15s,
+ *
+ *        9.1.2017: !!! projevuje se problem s mazanim pameti,
+ *        po vycisteni napajecich kontaktu zavada odstranena, posilim napajeni pameti z pinu
+ *        kapacitou 1M !!!
  *
  */
 
