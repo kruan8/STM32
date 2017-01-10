@@ -75,7 +75,7 @@ void RTC_SetWakeUp(uint16_t nInterval)
     /* add time out here for a robust application */
   }
 
-  RTC->WUTR = nInterval;
+  RTC->WUTR = nInterval - 1;  // WUTR je delicka, takže 0 znamena 1 impulz
   RTC->CR = RTC_CR_WUCKSEL_2 | RTC_CR_WUTE | RTC_CR_WUTIE; /* (11) */
   RTC->WPR = 0xFE; /* (12) */
   RTC->WPR = 0x64; /* (12) */
