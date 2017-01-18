@@ -37,6 +37,7 @@
  *        oprava vymazu pameti (nepocital s ruznou velikosti FLASH pameti),
  *        vypis teplotniho ofsetu ve statusu + refresh ofsetu po kalibraci,
  *        timeout pred vstupem do mereni prodlouzen na 15s,
+ *        snizeni hodnoty intervalu o 1s pred zapisem do RTC->WUTR,
  *
  *        9.1.2017: !!! projevuje se problem s mazanim pameti,
  *        po vycisteni napajecich kontaktu zavada odstranena, posilim napajeni pameti z pinu
