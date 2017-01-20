@@ -268,8 +268,8 @@ void ILI9163_WriteData8(uint8_t value)
 	ILI9163_CS_ENABLE;
 	ILI9163_A0_DATA;
 
-	SPI_SendData8(SPI1, value);
-	while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET);
+	SPI1->DR = value;
+	while (SPI1->SR & SPI_I2S_FLAG_BSY);
 	ILI9163_CS_DISABLE;
 }
 
@@ -279,9 +279,9 @@ void ILI9163_WriteData16(uint16_t value)
 	ILI9163_A0_DATA;
 
 	SPI_SendData8(SPI1, value >> 8);
-	while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
+	while (!(SPI1->SR & SPI_I2S_FLAG_TXE));
 	SPI_SendData8(SPI1, value);
-	while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET);
+	while (SPI1->SR & SPI_I2S_FLAG_BSY);
 	ILI9163_CS_DISABLE;
 }
 
@@ -335,8 +335,6 @@ void ILI9163_FillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t c
 	}
 #endif
 }
-
-
 
 void ILI9163_FillScreen(uint16_t color)
 {

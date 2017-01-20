@@ -22,8 +22,12 @@ int main(void)
 
 	UG_FillScreen(C_BLACK);
 
-	for (uint16_t x = 0; x )
 	UG_FillFrame(0, 0, 50, 60, C_YELLOW);
+
+	UG_FontSelect(&FONT_10X16);
+	UG_SetBackcolor(C_BLACK);
+	UG_SetForecolor(C_CYAN);
+	UG_PutString(0, 100, "Ahoj");
 
 //
 //#define MAX_OBJECTS 10
