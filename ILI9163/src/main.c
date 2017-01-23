@@ -1,8 +1,19 @@
+/*
+ *  LCD TFT display 2,34'' z eBay 240x320 SPI with TC XPT2046
+ *  LCD + TC pripojeny k SPI1
+ *
+ *
+ *
+ *
+ *
+ */
+
 
 #include "stm32f0xx.h"
 #include "ILI9163.h"
-
+#include "SPI1.h"
 #include "ugui.h"
+
 
 void Window_1Callback(UG_MESSAGE *msg);
 
@@ -14,7 +25,9 @@ int main(void)
 	RCC_ClocksTypeDef RCC_Clocks;
 	RCC_GetClocksFreq(&RCC_Clocks); // Get system clocks
 
+	SPI1_Init();
 	ILI9163_Init();
+	XPT2046_Init();
 
 	UG_Init(&gui, ILI9163_PixelSetRGB565, 240, 320);
 	UG_FontSetHSpace(0);

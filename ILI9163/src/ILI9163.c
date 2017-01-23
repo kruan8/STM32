@@ -20,10 +20,11 @@
 
 #include "ILI9163.h"
 #include "font.h"
+#include "SPI1.h"
 
-#define ILI9163_A0_PIN                     GPIO_Pin_6
-#define ILI9163_A0_GPIO_PORT               GPIOA
-#define ILI9163_A0_SCK_GPIO_CLK            RCC_AHBPeriph_GPIOA
+#define ILI9163_A0_PIN                     GPIO_Pin_4
+#define ILI9163_A0_GPIO_PORT               GPIOC
+#define ILI9163_A0_SCK_GPIO_CLK            RCC_AHBPeriph_GPIOC
 
 #define ILI9163_CS_PIN                     GPIO_Pin_4
 #define ILI9163_CS_GPIO_PORT               GPIOA
@@ -49,6 +50,9 @@
 #define ILI9163_A0_DATA						(ILI9163_A0_GPIO_PORT->BSRR = ILI9163_A0_PIN)
 #define ILI9163_A0_REG			 			(ILI9163_A0_GPIO_PORT->BRR = ILI9163_A0_PIN)
 
+#define ILI9163_SPI_PRESCALER      spi_br_2
+
+
 // chyba spatneho zadratovani displeje (128x160)
 // je treba posunout zobrazovanou pamet o 32 radku nize
 // s timto je potreba pocitat i pri aplikaci vertikalniho rolovani
@@ -71,52 +75,18 @@ void ILI9163_Init()
 
 	GPIO_InitTypeDef GPIO_InitStructure;
 
-	/* Enable the SPI periph */
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
-
-	/* Enable GPIO clocks */
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_Level_3;
-
-	/* SPI SCK pin configuration */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	/* SPI  MOSI pin configuration */
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	GPIO_PinAFConfig(GPIOA, GPIO_PinSource5, GPIO_AF_0);
-	GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_0);
-
-	/* SPI configuration -------------------------------------------------------*/
-	SPI_I2S_DeInit(SPI1);
-
-	SPI_InitTypeDef  SPI_InitStructure;
-	SPI_InitStructure.SPI_Direction = SPI_Direction_1Line_Tx;
-	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
-	SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
-	SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
-	SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
-	SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
-	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2;  // SCK freq=48/2=24Mhz
-	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
-	SPI_InitStructure.SPI_CRCPolynomial = 7;
-	SPI_Init(SPI1, &SPI_InitStructure);
-
-	SPI_Cmd(SPI1, ENABLE);
-
 	// next pins
-	GPIO_InitStructure.GPIO_Pin = ILI9163_A0_PIN | ILI9163_CS_PIN | ILI9163_RST_PIN | ILI9163_LED_PIN;
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+	GPIO_InitStructure.GPIO_Pin = ILI9163_CS_PIN | ILI9163_RST_PIN | ILI9163_LED_PIN;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_Level_3;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	RCC_AHBPeriphClockCmd(ILI9163_A0_SCK_GPIO_CLK, ENABLE);
+	GPIO_InitStructure.GPIO_Pin = ILI9163_A0_PIN;
+	GPIO_Init(ILI9163_A0_GPIO_PORT, &GPIO_InitStructure);
 
 	ILI9163_CS_DISABLE;
 
@@ -127,6 +97,8 @@ void ILI9163_Init()
 	ILI9163_Delay_ms(20);
 
 	ILI9163_LED_ON;
+
+	SPI1_SetPrescaler(ILI9163_SPI_PRESCALER);
 
 	// driver configuration
 	ILI9163_WriteToReg(0x01); //Software reset
@@ -242,6 +214,8 @@ void ILI9163_SetAddress(uint16_t xStart, uint16_t yStart, uint16_t xStop, uint16
   yStart += ILI9163_OFFSET;
   yStop += ILI9163_OFFSET;
 
+  SPI1_SetPrescaler(ILI9163_SPI_PRESCALER);
+
 	ILI9163_WriteToReg(0x2A);			// Column Address Set
 	ILI9163_WriteData16(xStart);
 	ILI9163_WriteData16(xStop);
@@ -259,7 +233,7 @@ void ILI9163_WriteToReg(uint8_t value)
 	ILI9163_A0_REG;
 
 	SPI_SendData8(SPI1, value);
-	while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET);
+	while (SPI1->SR & SPI_I2S_FLAG_BSY);
 	ILI9163_CS_DISABLE;
 }
 

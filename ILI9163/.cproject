@@ -70,6 +70,9 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.1490423042.2136121143" name="XPT2046.c" rcbsApplicability="disable" resourcePath="src/XPT2046.c" toolsToInvoke="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.330081403.1599122481">
+						<tool id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.330081403.1599122481" name="MCU GCC Compiler" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.330081403"/>
+					</fileInfo>
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="StdPeriph_Driver"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Utilities"/>
